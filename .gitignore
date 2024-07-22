@@ -1,0 +1,61 @@
+# Diretório binário
+/bin/
+/cmd/
+*.exe
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# Executáveis Go
+*.exe
+*.exe~
+*.out
+*.test
+
+# Diretórios de build
+_build/
+_build/
+
+# Pacotes
+pkg/
+
+# Cache de módulos
+go.sum
+vendor/
+
+# Cache do Go
+go-build/
+*.cache
+*.log
+
+# Configurações de IDE/editor
+.vscode/
+.idea/
+*.swp
+*.swo
+*.bak
+*.tmp
+*.temp
+
+# Arquivos de sistema
+.DS_Store
+Thumbs.db
+
+# Logs e outros
+*.log
+*.csv
+*.pid
+*.gz
+*.zip
+
+# Arquivos temporários
+*.tmp
+*.temp
+*.old
+*.swp
+*.swo
+
+# Arquivos de ambiente
+.env
