@@ -7,8 +7,10 @@ import (
 	"grouper/adapter/output/converter"
 	"grouper/application/domain"
 	"grouper/application/port/output"
+	"grouper/configuration/logger"
 
 	_ "github.com/lib/pq"
+	"go.uber.org/zap"
 )
 
 func NewUserRepository(database *sql.DB) output.UserPort {
@@ -46,9 +48,12 @@ func (ur *userRepository) CreateUser(userDomain domain.UserDomain) (*domain.User
 		return nil, fmt.Errorf("could not insert user: %v", err)
 	}
 
-	fmt.Println("Usuário criado no banco de dados")
 	userCreatedDomain := converter.ConverterEntityToDomain(&userEntity)
 
+	logger.Info(
+		"CreateUser repository executed successfully",
+		zap.String("userId", userCreatedDomain.ID),
+		zap.String("journey", "createUser"))
 	return &userCreatedDomain, nil
 
 }
