@@ -7,6 +7,7 @@ import (
 
 func JSON(w http.ResponseWriter, status int, data any) {
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusCreated)
 
 	if data != nil {
 		response, err := json.Marshal(data)
@@ -20,7 +21,4 @@ func JSON(w http.ResponseWriter, status int, data any) {
 		}
 
 	}
-
-	w.WriteHeader(http.StatusCreated)
-
 }
