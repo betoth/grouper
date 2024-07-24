@@ -3,6 +3,7 @@ package controller
 import (
 	"encoding/json"
 	"fmt"
+	"grouper/adapter/input/controller/response"
 	"grouper/adapter/input/converter"
 	"grouper/adapter/input/model/request"
 	"grouper/application/port/input"
@@ -46,15 +47,6 @@ func (uc *userControllerInterface) CreateUser(w http.ResponseWriter, r *http.Req
 	}
 	userResponse := converter.ConvertDomainToResponse(domainResult)
 
-	response, err := json.Marshal(userResponse)
-	if err != nil {
-		http.Error(w, "Failed to marshal JSON response", http.StatusInternalServerError)
-		return
-	}
-	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
-	if _, err := w.Write(response); err != nil {
-		http.Error(w, "Failed to write response", http.StatusInternalServerError)
-	}
+	response.JSON(w, http.StatusCreated, userResponse)
 
 }
