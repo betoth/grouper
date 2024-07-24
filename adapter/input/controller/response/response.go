@@ -2,22 +2,32 @@ package response
 
 import (
 	"encoding/json"
+	"grouper/config/logger"
+	"grouper/config/rest_errors"
 	"net/http"
+
+	"go.uber.org/zap"
 )
 
 func JSON(w http.ResponseWriter, status int, data any) {
 	w.Header().Set("Content-Type", "application/json")
-	w.WriteHeader(http.StatusCreated)
+	w.WriteHeader(status)
 
 	if data != nil {
 		response, err := json.Marshal(data)
 		if err != nil {
-			http.Error(w, "Failed to marshal JSON response", http.StatusInternalServerError)
+			logger.Error("Error trying marshal data", err,
+				zap.String("journey", "response"))
+			rest_errors.NewInternalServerError("")
 			return
+
 		}
 
 		if _, err := w.Write(response); err != nil {
-			http.Error(w, "Failed to write response", http.StatusInternalServerError)
+			logger.Error("Error trying write response", err,
+				zap.String("journey", "response"))
+			rest_errors.NewInternalServerError("")
+			return
 		}
 
 	}

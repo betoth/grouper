@@ -2,12 +2,12 @@ package controller
 
 import (
 	"encoding/json"
-	"fmt"
 	"grouper/adapter/input/controller/response"
 	"grouper/adapter/input/converter"
 	"grouper/adapter/input/model/request"
 	"grouper/application/port/input"
-	"grouper/configuration/logger"
+	"grouper/config/logger"
+	"grouper/config/rest_errors"
 	"net/http"
 
 	"go.uber.org/zap"
@@ -34,17 +34,24 @@ func (uc *userControllerInterface) CreateUser(w http.ResponseWriter, r *http.Req
 	var userRequest request.UserRequest
 	err := json.NewDecoder(r.Body).Decode(&userRequest)
 	if err != nil {
-		logger.Error("Error trying to marshal object", err)
-		fmt.Fprint(w, err)
+		logger.Error("Error trying to validate user info", err,
+			zap.String("journey", "createUser"))
+		response.JSON(w, http.StatusBadRequest, rest_errors.NewBadRequestError("Error trying to validate user info"))
 		return
 	}
 
 	userDomain := converter.ConvertRequestToDomain(&userRequest)
-	domainResult, err := uc.service.CreateUserServices(userDomain)
-	if err != nil {
-		fmt.Fprint(w, err)
+
+	domainResult, restErr := uc.service.CreateUserServices(userDomain)
+	if restErr != nil {
+		logger.Error(
+			"Error trying to call CreateUser service",
+			restErr,
+			zap.String("journey", "createUser"))
+		response.JSON(w, restErr.Code, restErr)
 		return
 	}
+
 	userResponse := converter.ConvertDomainToResponse(domainResult)
 
 	response.JSON(w, http.StatusCreated, userResponse)

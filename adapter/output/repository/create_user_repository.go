@@ -3,11 +3,11 @@ package repository
 import (
 	"context"
 	"database/sql"
-	"fmt"
 	"grouper/adapter/output/converter"
 	"grouper/application/domain"
 	"grouper/application/port/output"
-	"grouper/configuration/logger"
+	"grouper/config/logger"
+	"grouper/config/rest_errors"
 
 	_ "github.com/lib/pq"
 	"go.uber.org/zap"
@@ -24,7 +24,9 @@ type userRepository struct {
 	db *sql.DB
 }
 
-func (ur *userRepository) CreateUser(userDomain domain.UserDomain) (*domain.UserDomain, error) {
+func (ur *userRepository) CreateUser(userDomain domain.UserDomain) (*domain.UserDomain, *rest_errors.RestErr) {
+	logger.Info("CreateUser repository execution started",
+		zap.String("journey", "createUser"))
 
 	userEntity := converter.ConvertDomainToEntity(&userDomain)
 
@@ -44,8 +46,13 @@ func (ur *userRepository) CreateUser(userDomain domain.UserDomain) (*domain.User
 		userEntity.CreatedAt,
 	)
 
-	if err := row.Scan(&userEntity.ID, &userEntity.CreatedAt); err != nil {
-		return nil, fmt.Errorf("could not insert user: %v", err)
+	err := row.Scan(&userEntity.ID, &userEntity.CreatedAt)
+	if err != nil {
+		logger.Error("Error trying to create user in database",
+			err,
+			zap.String("journey", "createUser"))
+		return nil, rest_errors.NewInternalServerError(err.Error())
+
 	}
 
 	userCreatedDomain := converter.ConverterEntityToDomain(&userEntity)
@@ -54,6 +61,7 @@ func (ur *userRepository) CreateUser(userDomain domain.UserDomain) (*domain.User
 		"CreateUser repository executed successfully",
 		zap.String("userId", userCreatedDomain.ID),
 		zap.String("journey", "createUser"))
+
 	return &userCreatedDomain, nil
 
 }

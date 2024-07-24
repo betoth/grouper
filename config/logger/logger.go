@@ -1,7 +1,7 @@
 package logger
 
 import (
-	"os"
+	"grouper/config"
 	"strings"
 
 	"go.uber.org/zap"
@@ -10,15 +10,12 @@ import (
 
 var (
 	log *zap.Logger
-
-	LOG_OUTPUT = "LOG_OUTPUT"
-	LOG_LEVEL  = "LOG_LEVEL"
 )
 
-func Init() {
+func Init(cfg *config.Config) {
 	logConfig := zap.Config{
-		OutputPaths: []string{getOutputLogs()},
-		Level:       zap.NewAtomicLevelAt(getLevelLogs()),
+		OutputPaths: []string{getOutputLogs(cfg.LOGOutput)},
+		Level:       zap.NewAtomicLevelAt(getLevelLogs(cfg.LOGLevel)),
 		Encoding:    "json",
 		EncoderConfig: zapcore.EncoderConfig{
 			LevelKey:     "level",
@@ -50,8 +47,8 @@ func Error(message string, err error, tags ...zap.Field) {
 	}
 }
 
-func getOutputLogs() string {
-	output := strings.ToLower(strings.TrimSpace(os.Getenv(LOG_OUTPUT)))
+func getOutputLogs(logOutput string) string {
+	output := strings.ToLower(strings.TrimSpace(logOutput))
 	if output == "" {
 		return "stdout"
 	}
@@ -59,8 +56,8 @@ func getOutputLogs() string {
 	return output
 }
 
-func getLevelLogs() zapcore.Level {
-	switch strings.ToLower(strings.TrimSpace(os.Getenv(LOG_LEVEL))) {
+func getLevelLogs(logLevel string) zapcore.Level {
+	switch strings.ToLower(strings.TrimSpace(logLevel)) {
 	case "info":
 		return zapcore.InfoLevel
 	case "error":
