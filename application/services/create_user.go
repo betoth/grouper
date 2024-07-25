@@ -37,3 +37,35 @@ func (ud *userDomainService) CreateUserServices(userDomain domain.UserDomain) (*
 
 	return userDomainRepository, nil
 }
+
+func (ud *userDomainService) FindUserByUsernameServices(username string) (*[]domain.UserDomain, *rest_errors.RestErr) {
+
+	usersDomainRepository, err := ud.repository.FindUserByUsername(username)
+	if err != nil {
+		logger.Error("Error trying to call repository",
+			err,
+			zap.String("journey", "FindUserByUsername"))
+		return &[]domain.UserDomain{}, err
+	}
+
+	logger.Info("Find user by username executed successfully",
+		zap.String("journey", "FindUserByUsername"))
+
+	return usersDomainRepository, err
+}
+
+func (ud *userDomainService) FindUserByEmailServices(email string) (*[]domain.UserDomain, *rest_errors.RestErr) {
+
+	usersDomainRepository, err := ud.repository.FindUserByEmail(email)
+	if err != nil {
+		logger.Error("Error trying to call repository",
+			err,
+			zap.String("journey", "FindUserByEmail"))
+		return &[]domain.UserDomain{}, err
+	}
+
+	logger.Info("Find user by email executed successfully",
+		zap.String("journey", "FindUserByEmail"))
+
+	return usersDomainRepository, err
+}

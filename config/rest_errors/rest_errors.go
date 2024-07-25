@@ -62,7 +62,15 @@ func NewNotFoundError(message string) *RestErr {
 func NewUnprocessableEntityError(message string) *RestErr {
 	return &RestErr{
 		Message: message,
-		Err:     "Unprocessable Entity",
+		Err:     "Unprocessable entity",
 		Code:    http.StatusUnprocessableEntity,
+	}
+}
+
+func NewConflictError(message string) *RestErr {
+	return &RestErr{
+		Message: message,
+		Err:     "Conflict error",
+		Code:    http.StatusConflict,
 	}
 }

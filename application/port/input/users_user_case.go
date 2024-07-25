@@ -7,4 +7,6 @@ import (
 
 type UserDomainService interface {
 	CreateUserServices(domain.UserDomain) (*domain.UserDomain, *rest_errors.RestErr)
+	FindUserByUsernameServices(username string) (*[]domain.UserDomain, *rest_errors.RestErr)
+	FindUserByEmailServices(email string) (*[]domain.UserDomain, *rest_errors.RestErr)
 }
