@@ -47,7 +47,7 @@ func (uc *userControllerInterface) CreateUser(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	userDomain := converter.ConvertRequestToDomain(&userRequest)
+	userDomain := converter.ConvertUserRequestToDomain(&userRequest)
 
 	if err := checkUsernameAvailability(uc, userDomain.Username); err != nil {
 		logger.Error("Username validation failed", err, zap.String("journey", "createUser"))
@@ -68,7 +68,7 @@ func (uc *userControllerInterface) CreateUser(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	userResponse := converter.ConvertDomainToResponse(domainResult)
+	userResponse := converter.ConvertUserDomainToResponse(domainResult)
 	response.JSON(w, http.StatusCreated, userResponse)
 }
 

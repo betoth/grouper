@@ -6,13 +6,23 @@ import (
 	"time"
 )
 
-func ConvertRequestToDomain(userRequest *request.UserRequest) domain.UserDomain {
+func ConvertUserRequestToDomain(userRequest *request.UserRequest) domain.UserDomain {
 	return domain.UserDomain{
 		ID:        "",
 		Name:      userRequest.Name,
 		Email:     userRequest.Email,
 		Username:  userRequest.Username,
 		Password:  userRequest.Password,
+		CreatedAt: time.Now(),
+	}
+
+}
+
+func ConvertGroupRequestToDomain(groupRequest *request.GroupRequest) domain.GroupDomain {
+	return domain.GroupDomain{
+		ID:        "",
+		Name:      groupRequest.Name,
+		UserID:    groupRequest.UserID,
 		CreatedAt: time.Now(),
 	}
 

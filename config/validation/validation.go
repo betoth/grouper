@@ -1,7 +1,6 @@
 package validation
 
 import (
-	"grouper/adapter/input/model/request"
 	"grouper/config/rest_errors"
 
 	"strings"
@@ -11,8 +10,8 @@ import (
 
 var validate = validator.New()
 
-func ValidateUserRequest(user *request.UserRequest) *rest_errors.RestErr {
-	err := validate.Struct(user)
+func ValidateUserRequest(data any) *rest_errors.RestErr {
+	err := validate.Struct(data)
 	if err != nil {
 		validationErrors := err.(validator.ValidationErrors)
 		var errorMessages []string

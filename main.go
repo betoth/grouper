@@ -30,11 +30,11 @@ func main() {
 		return
 	}
 
-	userController := initDependencies(database)
+	userController, GroupController := initDependencies(database)
 
 	router := mux.NewRouter()
 
-	routes.InitRoutes(userController, router)
+	routes.InitRoutes(userController, GroupController, router)
 
 	logger.Info("Init server",
 		zap.String("journey", "main"),
@@ -43,8 +43,11 @@ func main() {
 	http.ListenAndServe(":8080", router)
 }
 
-func initDependencies(db *sql.DB) controller.UserControllerInterface {
+func initDependencies(db *sql.DB) (controller.UserControllerInterface, controller.GroupControllerInterface) {
 	userRepo := repository.NewUserRepository(db)
 	userService := services.NewUserServices(userRepo)
-	return controller.NewUserControllerInterface(userService)
+
+	groupRepo := repository.NewGroupRepository(db)
+	groupService := services.NewGroupServices(groupRepo)
+	return controller.NewUserControllerInterface(userService), controller.NewGroupControllerInterface(groupService)
 }

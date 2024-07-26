@@ -18,7 +18,6 @@ func NewUserRepository(database *sql.DB) output.UserPort {
 	return &userRepository{
 		database,
 	}
-
 }
 
 type userRepository struct {
@@ -29,7 +28,7 @@ func (ur *userRepository) CreateUser(userDomain domain.UserDomain) (*domain.User
 	logger.Info("CreateUser repository execution started",
 		zap.String("journey", "createUser"))
 
-	userEntity := converter.ConvertDomainToEntity(&userDomain)
+	userEntity := converter.ConvertUserDomainToEntity(&userDomain)
 
 	query := `
         INSERT INTO users ( name, email, username, password, createdat)
@@ -56,7 +55,7 @@ func (ur *userRepository) CreateUser(userDomain domain.UserDomain) (*domain.User
 
 	}
 
-	userCreatedDomain := converter.ConverterEntityToDomain(&userEntity)
+	userCreatedDomain := converter.ConverterUserEntityToDomain(&userEntity)
 
 	logger.Info(
 		"CreateUser repository executed successfully",
@@ -64,7 +63,6 @@ func (ur *userRepository) CreateUser(userDomain domain.UserDomain) (*domain.User
 		zap.String("journey", "createUser"))
 
 	return &userCreatedDomain, nil
-
 }
 
 func (ur *userRepository) FindUserByUsername(username string) (*[]domain.UserDomain, *rest_errors.RestErr) {
@@ -112,7 +110,7 @@ func (ur *userRepository) FindUserByUsername(username string) (*[]domain.UserDom
 			return nil, rest_errors.NewInternalServerError("")
 		}
 
-		user := converter.ConverterEntityToDomain(&userEntity)
+		user := converter.ConverterUserEntityToDomain(&userEntity)
 		users = append(users, user)
 	}
 
@@ -164,7 +162,7 @@ func (ur *userRepository) FindUserByEmail(email string) (*[]domain.UserDomain, *
 			return nil, rest_errors.NewInternalServerError("")
 		}
 
-		user := converter.ConverterEntityToDomain(&userEntity)
+		user := converter.ConverterUserEntityToDomain(&userEntity)
 		users = append(users, user)
 	}
 
