@@ -6,6 +6,7 @@ import (
 	"grouper/adapter/input/controller/routes"
 	"grouper/adapter/output/repository"
 	"grouper/application/services"
+
 	"grouper/config"
 	"grouper/config/database/postgres"
 	"grouper/config/logger"
@@ -30,11 +31,11 @@ func main() {
 		return
 	}
 
-	userController, GroupController := initDependencies(database)
+	userController, GroupController, loginController := initDependencies(database)
 
 	router := mux.NewRouter()
 
-	routes.InitRoutes(userController, GroupController, router)
+	routes.InitRoutes(userController, GroupController, loginController, router)
 
 	logger.Info("Init server",
 		zap.String("journey", "main"),
@@ -43,11 +44,15 @@ func main() {
 	http.ListenAndServe(":8080", router)
 }
 
-func initDependencies(db *sql.DB) (controller.UserControllerInterface, controller.GroupControllerInterface) {
+func initDependencies(db *sql.DB) (controller.UserControllerInterface, controller.GroupControllerInterface, controller.LoginControllerInterface) {
 	userRepo := repository.NewUserRepository(db)
 	userService := services.NewUserServices(userRepo)
 
 	groupRepo := repository.NewGroupRepository(db)
 	groupService := services.NewGroupServices(groupRepo)
-	return controller.NewUserControllerInterface(userService), controller.NewGroupControllerInterface(groupService)
+
+	LoginRepo := repository.NewLoginRepository(db)
+	LoginService := services.NewLoginServices(LoginRepo)
+
+	return controller.NewUserControllerInterface(userService), controller.NewGroupControllerInterface(groupService), controller.NewLoginControllerInterface(LoginService)
 }

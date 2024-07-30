@@ -27,3 +27,11 @@ func ConvertGroupRequestToDomain(groupRequest *request.GroupRequest) domain.Grou
 	}
 
 }
+
+func ConvertLoginRequestToDomain(loginRequest *request.LoginRequest) domain.LoginDomain {
+	return domain.LoginDomain{
+		Email:    loginRequest.Email,
+		Password: loginRequest.Password,
+	}
+
+}

@@ -26,3 +26,11 @@ func ConverterGroupEntityToDomain(groupEntity *entity.GroupEntity) domain.GroupD
 		CreatedAt: groupEntity.CreatedAt,
 	}
 }
+
+func ConverterLoginEntityToDomain(LoginEntity *entity.LoginEntity) domain.LoginDomain {
+
+	return domain.LoginDomain{
+		Email:    LoginEntity.Email,
+		Password: LoginEntity.Password,
+	}
+}
