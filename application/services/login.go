@@ -1,7 +1,6 @@
 package services
 
 import (
-	"fmt"
 	"grouper/application/domain"
 	"grouper/application/port/input"
 	"grouper/application/port/output"
@@ -31,10 +30,7 @@ func (lg *loginDomainService) LoginServices(loginDomain domain.LoginDomain) (str
 			zap.String("journey", "Login"))
 		return "", rest_errors.NewInternalServerError("")
 	}
-	fmt.Println(loginRepository.Password)
-	fmt.Println(loginDomain.Password)
 	ok := util.VerifyPassword(loginDomain.Password, loginRepository.Password)
-	fmt.Println(ok)
 	if ok != nil {
 		logger.Error("Error trying to call repository",
 			err,
