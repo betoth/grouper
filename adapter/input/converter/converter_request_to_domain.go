@@ -21,7 +21,6 @@ func ConvertGroupRequestToDomain(groupRequest *request.GroupRequest) domain.Grou
 	return domain.GroupDomain{
 		ID:        "",
 		Name:      groupRequest.Name,
-		UserID:    groupRequest.UserID,
 		CreatedAt: time.Now(),
 	}
 }

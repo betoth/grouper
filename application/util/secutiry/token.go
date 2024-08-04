@@ -2,9 +2,14 @@ package util
 
 import (
 	"fmt"
+	"grouper/config/logger"
+	"grouper/config/rest_errors"
+	"net/http"
+	"strings"
 	"time"
 
 	"github.com/golang-jwt/jwt"
+	"go.uber.org/zap"
 )
 
 type jwtToken struct {
@@ -13,7 +18,6 @@ type jwtToken struct {
 }
 
 func NewJwtToken() *jwtToken {
-
 	return &jwtToken{
 		secretKey: "secret-key",
 		issuer:    "grouper",
@@ -25,10 +29,10 @@ type Claim struct {
 	jwt.StandardClaims
 }
 
-func (t *jwtToken) GenerateToken(userID string) (string, error) {
+func (t *jwtToken) GenerateToken(userID string) (string, *rest_errors.RestErr) {
 	claim := &Claim{
-		userID,
-		jwt.StandardClaims{
+		Sum: userID,
+		StandardClaims: jwt.StandardClaims{
 			ExpiresAt: time.Now().Add(time.Hour * 2).Unix(),
 			Issuer:    t.issuer,
 			IssuedAt:  time.Now().Unix(),
@@ -39,18 +43,65 @@ func (t *jwtToken) GenerateToken(userID string) (string, error) {
 
 	tokenS, err := token.SignedString([]byte(t.secretKey))
 	if err != nil {
-		return "", err
+		logger.Error("Error signing token", err, zap.String("journey", "GenerateToken"))
+		return "", rest_errors.NewInternalServerError("Error signing token: " + err.Error())
 	}
+	logger.Info("Token successfully generated", zap.String("journey", "GenerateToken"), zap.String("token", tokenS))
 	return tokenS, nil
 }
 
 func (t *jwtToken) ValidateToken(token string) bool {
 	_, err := jwt.Parse(token, func(tk *jwt.Token) (interface{}, error) {
 		if _, isValid := tk.Method.(*jwt.SigningMethodHMAC); !isValid {
-			return nil, fmt.Errorf("invalid token")
+			return nil, fmt.Errorf("unexpected signing method: %v", tk.Method)
 		}
 		return []byte(t.secretKey), nil
 	})
 
-	return err == nil
+	if err != nil {
+		logger.Error("Error validating token", err, zap.String("journey", "ValidateToken"))
+		return false
+	}
+	return true
+}
+
+func (t *jwtToken) extractToken(r *http.Request) string {
+	token := r.Header.Get("Authorization")
+	parts := strings.Split(token, " ")
+
+	if len(parts) == 2 && strings.ToLower(parts[0]) == "bearer" {
+		return parts[1]
+	}
+
+	logger.Error("Malformed token header", nil, zap.String("journey", "ExtractToken"), zap.String("tokenHeader", token))
+	return ""
+}
+
+func (t *jwtToken) returnVerificationKey(token *jwt.Token) (interface{}, error) {
+	if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
+		return nil, fmt.Errorf("unexpected signing method: %v", token.Header["alg"])
+	}
+	return []byte(t.secretKey), nil
+}
+
+// ExtractUserID extracts user id from JWT token
+func (t *jwtToken) ExtractUserID(r *http.Request) (string, *rest_errors.RestErr) {
+	tokenString := t.extractToken(r)
+	token, err := jwt.Parse(tokenString, t.returnVerificationKey)
+	if err != nil {
+		logger.Error("Error parsing token", err, zap.String("journey", "ExtractUserID"))
+		return "", rest_errors.NewInternalServerError("Error parsing token: " + err.Error())
+	}
+
+	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
+		userID, ok := claims["sum"].(string)
+		if !ok {
+			logger.Error("Invalid claim format", nil, zap.String("journey", "ExtractUserID"))
+			return "", rest_errors.NewInternalServerError("Invalid claim format")
+		}
+		return userID, nil
+	}
+
+	logger.Error("Invalid token", nil, zap.String("journey", "ExtractUserID"))
+	return "", rest_errors.NewUnauthorizedRequestError("Invalid token")
 }

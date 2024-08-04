@@ -3,9 +3,9 @@ package rest_errors
 import "net/http"
 
 type RestErr struct {
-	Message string   `json:"message,omitempty"`
-	Err     string   `json:"error,omitempty"`
 	Code    int      `json:"code,omitempty"`
+	Err     string   `json:"error,omitempty"`
+	Message string   `json:"message,omitempty"`
 	Causes  []Causes `json:"causes,omitempty"`
 }
 
@@ -20,65 +20,65 @@ func (r *RestErr) Error() string {
 
 func NewBadRequestError(message string) *RestErr {
 	return &RestErr{
-		Message: message,
-		Err:     "Bad request",
 		Code:    http.StatusBadRequest,
+		Err:     "Bad request",
+		Message: message,
 	}
 }
 
 func NewUnauthorizedRequestError(message string) *RestErr {
 	return &RestErr{
-		Message: message,
-		Err:     "Unauthorized",
 		Code:    http.StatusUnauthorized,
+		Err:     "Unauthorized",
+		Message: message,
 	}
 }
 
 func NewBadRequestValidationError(message string, causes []Causes) *RestErr {
 	return &RestErr{
-		Message: message,
-		Err:     "Bad request",
 		Code:    http.StatusBadRequest,
+		Err:     "Bad request",
+		Message: message,
 		Causes:  causes,
 	}
 }
 
 func NewInternalServerError(message string) *RestErr {
 	return &RestErr{
-		Message: message,
-		Err:     "Internal server error",
 		Code:    http.StatusInternalServerError,
+		Err:     "Internal server error",
+		Message: message,
 	}
 }
 
 func NewNotFoundError(message string) *RestErr {
 	return &RestErr{
-		Message: message,
-		Err:     "Not found",
 		Code:    http.StatusNotFound,
+		Err:     "Not found",
+		Message: message,
 	}
 }
 
 func NewUnprocessableEntityError(message string) *RestErr {
 	return &RestErr{
-		Message: message,
-		Err:     "Unprocessable entity",
 		Code:    http.StatusUnprocessableEntity,
+		Err:     "Unprocessable entity",
+		Message: message,
 	}
 }
 
 func NewConflictError(message string) *RestErr {
 	return &RestErr{
-		Message: message,
-		Err:     "Conflict error",
 		Code:    http.StatusConflict,
+		Err:     "Conflict error",
+		Message: message,
 	}
 }
 
 func NewUnauthorizedError(message string) *RestErr {
 	return &RestErr{
-		Message: message,
-		Err:     "Unauthorized",
 		Code:    http.StatusUnauthorized,
+		Err:     "Unauthorized",
+		Message: message,
 	}
 }

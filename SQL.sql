@@ -38,4 +38,21 @@ CREATE TABLE group (
 
 GRANT ALL PRIVILEGES ON TABLE group TO groupe;
 
+DROP TABLE IF EXISTS user_groups;
+
+CREATE TABLE user_groups (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    user_id UUID NOT NULL,
+    group_id UUID NOT NULL,
+    joined_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    CONSTRAINT fk_user
+      FOREIGN KEY(user_id) 
+      REFERENCES users(id),
+    CONSTRAINT fk_group
+      FOREIGN KEY(group_id)
+      REFERENCES groups(id),
+    CONSTRAINT unique_user_group UNIQUE (user_id, group_id)
+);
+
+GRANT ALL PRIVILEGES ON TABLE user_groups TO groupe;
 \q

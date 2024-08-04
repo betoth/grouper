@@ -2,7 +2,6 @@ package controller
 
 import (
 	"encoding/json"
-	"fmt"
 	"grouper/adapter/input/controller/response"
 	"grouper/adapter/input/converter"
 	"grouper/adapter/input/model/request"
@@ -94,7 +93,7 @@ func (uc *userControllerInterface) Login(w http.ResponseWriter, r *http.Request)
 		response.JSON(w, restErr.Code, restErr)
 		return
 	}
-	fmt.Println("ID", domainResult.ID)
+
 	token, err := util.NewJwtToken().GenerateToken(domainResult.ID)
 	if err != nil {
 		logger.Error("Error trying generate token", restErr, zap.String("journey", "Login"))
