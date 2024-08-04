@@ -25,8 +25,7 @@ type userRepository struct {
 }
 
 func (ur *userRepository) CreateUser(userDomain domain.UserDomain) (*domain.UserDomain, *rest_errors.RestErr) {
-	logger.Info("CreateUser repository execution started",
-		zap.String("journey", "createUser"))
+	logger.Info("CreateUser repository execution started", zap.String("journey", "createUser"))
 
 	userEntity := converter.ConvertUserDomainToEntity(&userDomain)
 
@@ -48,39 +47,28 @@ func (ur *userRepository) CreateUser(userDomain domain.UserDomain) (*domain.User
 
 	err := row.Scan(&userEntity.ID, &userEntity.CreatedAt)
 	if err != nil {
-		logger.Error("Error trying to create user in database",
-			err,
-			zap.String("journey", "createUser"))
+		logger.Error("Error trying to create user in database", err, zap.String("journey", "createUser"))
 		return nil, rest_errors.NewInternalServerError(err.Error())
 
 	}
 
 	userCreatedDomain := converter.ConverterUserEntityToDomain(&userEntity)
 
-	logger.Info(
-		"CreateUser repository executed successfully",
-		zap.String("userId", userCreatedDomain.ID),
-		zap.String("journey", "createUser"))
+	logger.Info("CreateUser repository executed successfully", zap.String("userId", userCreatedDomain.ID), zap.String("journey", "createUser"))
 
 	return &userCreatedDomain, nil
 }
 
 func (ur *userRepository) FindUserByUsername(username string) (*[]domain.UserDomain, *rest_errors.RestErr) {
-
-	logger.Info("Start repository user find by username",
-		zap.String("journey", "findUserByUsername"))
+	logger.Info("Start repository user find by username", zap.String("journey", "findUserByUsername"))
 
 	query := "SELECT id, name, email, username, createdat FROM users WHERE username = $1"
 
 	rows, err := ur.db.Query(query, username)
 	if err != nil {
-		logger.Error(
-			"Error trying to search user in database",
-			err,
-			zap.String("journey", "FindUserByUsername"))
+		logger.Error("Error trying to search user in database", err, zap.String("journey", "FindUserByUsername"))
 		return nil, rest_errors.NewInternalServerError("")
 	}
-
 	defer rows.Close()
 
 	var users []domain.UserDomain
@@ -98,18 +86,13 @@ func (ur *userRepository) FindUserByUsername(username string) (*[]domain.UserDom
 		if err != nil {
 			if err == sql.ErrNoRows {
 				logger.Error(
-					"No user with this username",
-					err,
-					zap.String("journey", "FindUserByUsername"))
+					"No user with this username", err, zap.String("journey", "FindUserByUsername"))
 				return nil, rest_errors.NewNotFoundError("User not found")
 			}
 			logger.Error(
-				"Error trying to scan user in database",
-				err,
-				zap.String("journey", "FindUserByUsername"))
+				"Error trying to scan user in database", err, zap.String("journey", "FindUserByUsername"))
 			return nil, rest_errors.NewInternalServerError("")
 		}
-
 		user := converter.ConverterUserEntityToDomain(&userEntity)
 		users = append(users, user)
 	}
@@ -118,18 +101,13 @@ func (ur *userRepository) FindUserByUsername(username string) (*[]domain.UserDom
 }
 
 func (ur *userRepository) FindUserByEmail(email string) (*[]domain.UserDomain, *rest_errors.RestErr) {
-
-	logger.Info("Start repository user find by email",
-		zap.String("journey", "FindUserByEmail"))
+	logger.Info("Start repository user find by email", zap.String("journey", "FindUserByEmail"))
 
 	query := "SELECT id, name, email, username, createdat FROM users WHERE email = $1"
 
 	rows, err := ur.db.Query(query, email)
 	if err != nil {
-		logger.Error(
-			"Error trying to search user in database",
-			err,
-			zap.String("journey", "FindUserByEmail"))
+		logger.Error("Error trying to search user in database", err, zap.String("journey", "FindUserByEmail"))
 		return nil, rest_errors.NewInternalServerError("")
 	}
 
@@ -150,21 +128,46 @@ func (ur *userRepository) FindUserByEmail(email string) (*[]domain.UserDomain, *
 		if err != nil {
 			if err == sql.ErrNoRows {
 				logger.Error(
-					"No user with this username",
-					err,
-					zap.String("journey", "FindUserByEmail"))
+					"No user with this username", err, zap.String("journey", "FindUserByEmail"))
 				return nil, rest_errors.NewNotFoundError("User not found")
 			}
 			logger.Error(
-				"Error trying to scan user in database",
-				err,
-				zap.String("journey", "FindUserByEmail"))
+				"Error trying to scan user in database", err, zap.String("journey", "FindUserByEmail"))
 			return nil, rest_errors.NewInternalServerError("")
 		}
-
 		user := converter.ConverterUserEntityToDomain(&userEntity)
 		users = append(users, user)
 	}
 
 	return &users, nil
+}
+
+func (ur *userRepository) Login(userDomain domain.UserDomain) (*domain.UserDomain, *rest_errors.RestErr) {
+	userEntity := converter.ConvertUserDomainToEntity(&userDomain)
+
+	logger.Info("Start repository Login",
+		zap.String("journey", "Login"))
+
+	query := "SELECT password, id FROM users WHERE email = $1"
+
+	row, err := ur.db.Query(query, userEntity.Email)
+	if err != nil {
+		logger.Error("Error trying to search user in database", err, zap.String("journey", "Login"))
+		return nil, rest_errors.NewInternalServerError("")
+	}
+
+	if row.Next() {
+		err = row.Scan(&userEntity.Password, &userEntity.ID)
+		if err != nil {
+			if err == sql.ErrNoRows {
+				logger.Error("No user with this email", err, zap.String("journey", "Login"))
+				return nil, rest_errors.NewNotFoundError("User not found")
+			}
+			logger.Error("Error trying to scan user in database", err, zap.String("journey", "Login"))
+			return nil, rest_errors.NewInternalServerError("")
+		}
+		userDomain = converter.ConverterUserEntityToDomain(&userEntity)
+	}
+
+	return &userDomain, nil
 }

@@ -12,6 +12,7 @@ type Config struct {
 	LOGOutput  string
 	LOGLevel   string
 	APIPort    string
+	SECRET_KEY string
 }
 
 func NewConfig() *Config {

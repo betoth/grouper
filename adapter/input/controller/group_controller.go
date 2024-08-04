@@ -30,7 +30,6 @@ type groupControllerInterface struct {
 }
 
 func (gc *groupControllerInterface) CreateGroup(w http.ResponseWriter, r *http.Request) {
-
 	var groupRequest request.GroupRequest
 
 	err := json.NewDecoder(r.Body).Decode(&groupRequest)

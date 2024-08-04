@@ -15,7 +15,6 @@ func ConvertUserRequestToDomain(userRequest *request.UserRequest) domain.UserDom
 		Password:  userRequest.Password,
 		CreatedAt: time.Now(),
 	}
-
 }
 
 func ConvertGroupRequestToDomain(groupRequest *request.GroupRequest) domain.GroupDomain {
@@ -25,13 +24,11 @@ func ConvertGroupRequestToDomain(groupRequest *request.GroupRequest) domain.Grou
 		UserID:    groupRequest.UserID,
 		CreatedAt: time.Now(),
 	}
-
 }
 
-func ConvertLoginRequestToDomain(loginRequest *request.LoginRequest) domain.LoginDomain {
-	return domain.LoginDomain{
+func ConvertLoginRequestToUserDomain(loginRequest *request.LoginRequest) domain.UserDomain {
+	return domain.UserDomain{
 		Email:    loginRequest.Email,
 		Password: loginRequest.Password,
 	}
-
 }

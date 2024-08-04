@@ -15,7 +15,6 @@ func ConvertUserDomainToEntity(userDomain *domain.UserDomain) entity.UserEntity 
 		Password:  userDomain.Password,
 		CreatedAt: userDomain.CreatedAt,
 	}
-
 }
 
 func ConvertGroupDomainToEntity(groupDomain *domain.GroupDomain) entity.GroupEntity {
@@ -26,14 +25,4 @@ func ConvertGroupDomainToEntity(groupDomain *domain.GroupDomain) entity.GroupEnt
 		UserID:    groupDomain.UserID,
 		CreatedAt: groupDomain.CreatedAt,
 	}
-
-}
-
-func ConvertLoginDomainToEntity(LoginDomain *domain.LoginDomain) entity.LoginEntity {
-
-	return entity.LoginEntity{
-		Email:    LoginDomain.Email,
-		Password: LoginDomain.Password,
-	}
-
 }

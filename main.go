@@ -3,7 +3,7 @@ package main
 import (
 	"database/sql"
 	"grouper/adapter/input/controller"
-	"grouper/adapter/input/controller/routes"
+	"grouper/adapter/input/routes"
 	"grouper/adapter/output/repository"
 	"grouper/application/services"
 
@@ -18,7 +18,6 @@ import (
 )
 
 func main() {
-
 	cfg := config.NewConfig()
 
 	logger.Init(cfg)
@@ -31,28 +30,21 @@ func main() {
 		return
 	}
 
-	userController, GroupController, loginController := initDependencies(database)
-
+	routesController := routes.Routes{}
+	routesController.UserController, routesController.GroupController = initDependencies(database)
 	router := mux.NewRouter()
+	routes.InitRoutes(routesController, router)
 
-	routes.InitRoutes(userController, GroupController, loginController, router)
-
-	logger.Info("Init server",
-		zap.String("journey", "main"),
-	)
-
+	logger.Info("Init server", zap.String("journey", "main"))
 	http.ListenAndServe(":8080", router)
 }
 
-func initDependencies(db *sql.DB) (controller.UserControllerInterface, controller.GroupControllerInterface, controller.LoginControllerInterface) {
+func initDependencies(db *sql.DB) (controller.UserControllerInterface, controller.GroupControllerInterface) {
 	userRepo := repository.NewUserRepository(db)
 	userService := services.NewUserServices(userRepo)
 
 	groupRepo := repository.NewGroupRepository(db)
 	groupService := services.NewGroupServices(groupRepo)
 
-	LoginRepo := repository.NewLoginRepository(db)
-	LoginService := services.NewLoginServices(LoginRepo)
-
-	return controller.NewUserControllerInterface(userService), controller.NewGroupControllerInterface(groupService), controller.NewLoginControllerInterface(LoginService)
+	return controller.NewUserControllerInterface(userService), controller.NewGroupControllerInterface(groupService)
 }
