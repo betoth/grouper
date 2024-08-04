@@ -38,8 +38,9 @@ func (uc *userControllerInterface) CreateUser(w http.ResponseWriter, r *http.Req
 
 	err := json.NewDecoder(r.Body).Decode(&userRequest)
 	if err != nil {
+		restErr := rest_errors.NewBadRequestError(err.Error())
 		logger.Error("Error trying to validate user info", err, zap.String("journey", "createUser"))
-		response.JSON(w, http.StatusBadRequest, rest_errors.NewBadRequestError("Error trying to validate user info"))
+		response.JSON(w, restErr.Code, restErr)
 		return
 	}
 
@@ -52,15 +53,17 @@ func (uc *userControllerInterface) CreateUser(w http.ResponseWriter, r *http.Req
 
 	userDomain := converter.ConvertUserRequestToDomain(&userRequest)
 
-	if err := checkUsernameAvailability(uc, userDomain.Username); err != nil {
-		logger.Error("Username validation failed", err, zap.String("journey", "createUser"))
-		response.JSON(w, err.Code, err)
+	restErr := checkUsernameAvailability(uc, userDomain.Username)
+	if restErr != nil {
+		logger.Error("Username validation failed", restErr, zap.String("journey", "createUser"))
+		response.JSON(w, restErr.Code, err)
 		return
 	}
 
-	if err := checkEmailAvailability(uc, userDomain.Email); err != nil {
+	restErr = checkEmailAvailability(uc, userDomain.Email)
+	if restErr != nil {
 		logger.Error("Email validation failed", err, zap.String("journey", "createUser"))
-		response.JSON(w, err.Code, err)
+		response.JSON(w, restErr.Code, restErr)
 		return
 	}
 
@@ -80,8 +83,9 @@ func (uc *userControllerInterface) Login(w http.ResponseWriter, r *http.Request)
 
 	err := json.NewDecoder(r.Body).Decode(&LoginRequest)
 	if err != nil {
-		logger.Error("Error trying to validate login info", err, zap.String("journey", "Login"))
-		response.JSON(w, http.StatusBadRequest, rest_errors.NewBadRequestError("Error trying to validate login info"))
+		restErr := rest_errors.NewBadRequestError(err.Error())
+		logger.Error("Error trying to validate user info", err, zap.String("journey", "Login"))
+		response.JSON(w, restErr.Code, restErr)
 		return
 	}
 
@@ -94,28 +98,28 @@ func (uc *userControllerInterface) Login(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	token, err := util.NewJwtToken().GenerateToken(domainResult.ID)
-	if err != nil {
-		logger.Error("Error trying generate token", restErr, zap.String("journey", "Login"))
-		response.JSON(w, http.StatusInternalServerError, err)
+	token, restErr := util.NewJwtToken().GenerateToken(domainResult.ID)
+	if restErr != nil {
+		restErr := rest_errors.NewInternalServerError("Error trying to generate token")
+		logger.Error("Error trying to generate token", restErr, zap.String("journey", "Login"))
+		response.JSON(w, restErr.Code, restErr)
 		return
 	}
 
 	var tokenResp resp.LoginResponse
-
 	tokenResp.Token = token
-
 	response.JSON(w, http.StatusOK, tokenResp)
-
 }
 
 func checkUsernameAvailability(uc *userControllerInterface, username string) *rest_errors.RestErr {
 	usersWithUsername, restErr := uc.service.FindUserByUsernameServices(username)
 	if restErr != nil && restErr.Code != http.StatusNotFound {
-		return rest_errors.NewInternalServerError("Error validating username uniqueness")
+		logger.Error("Error validating username uniqueness", restErr, zap.String("username", username), zap.String("journey", "UserCheck"))
+		return rest_errors.NewInternalServerError("Error validating username uniqueness: " + restErr.Error())
 	}
 
 	if usersWithUsername != nil && len(*usersWithUsername) > 0 {
+		logger.Error("Username is already in use", nil, zap.String("username", username), zap.String("journey", "UserCheck"))
 		return rest_errors.NewConflictError("Username is already in use")
 	}
 	return nil
@@ -124,10 +128,12 @@ func checkUsernameAvailability(uc *userControllerInterface, username string) *re
 func checkEmailAvailability(uc *userControllerInterface, email string) *rest_errors.RestErr {
 	usersWithEmail, restErr := uc.service.FindUserByEmailServices(email)
 	if restErr != nil && restErr.Code != http.StatusNotFound {
-		return rest_errors.NewInternalServerError("Error validating email uniqueness")
+		logger.Error("Error validating email uniqueness", restErr, zap.String("email", email), zap.String("journey", "UserCheck"))
+		return rest_errors.NewInternalServerError("Error validating email uniqueness: " + restErr.Error())
 	}
 
 	if usersWithEmail != nil && len(*usersWithEmail) > 0 {
+		logger.Error("Email is already in use", nil, zap.String("email", email), zap.String("journey", "UserCheck"))
 		return rest_errors.NewConflictError("Email is already in use")
 	}
 	return nil
