@@ -22,5 +22,5 @@ func InitRoutes(routes Routes, r *mux.Router) {
 	ApiV1.HandleFunc("/group", middleware.Auth(routes.GroupController.CreateGroup)).Methods(http.MethodPost)
 	ApiV1.HandleFunc("/group/{groupId}/join", middleware.Auth(routes.GroupController.Join)).Methods(http.MethodPost)
 	ApiV1.HandleFunc("/group/{groupId:[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}}/leave", middleware.Auth(routes.GroupController.Leave)).Methods(http.MethodPost)
-
+	ApiV1.HandleFunc("/group", middleware.Auth(routes.GroupController.GetGroups)).Methods(http.MethodGet)
 }

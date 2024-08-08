@@ -1,4 +1,4 @@
-package util
+package secutiry
 
 import (
 	"fmt"
@@ -46,7 +46,7 @@ func (t *jwtToken) GenerateToken(userID string) (string, *rest_errors.RestErr) {
 		logger.Error("Error signing token", err, zap.String("journey", "GenerateToken"))
 		return "", rest_errors.NewInternalServerError("Error signing token: " + err.Error())
 	}
-	logger.Info("Token successfully generated", zap.String("journey", "GenerateToken"), zap.String("token", tokenS))
+	logger.Info("Token successfully generated", zap.String("journey", "Login"))
 	return tokenS, nil
 }
 
@@ -84,7 +84,6 @@ func (t *jwtToken) returnVerificationKey(token *jwt.Token) (interface{}, error) 
 	return []byte(t.secretKey), nil
 }
 
-// ExtractUserID extracts user id from JWT token
 func (t *jwtToken) ExtractUserID(r *http.Request) (string, *rest_errors.RestErr) {
 	tokenString := t.extractToken(r)
 	token, err := jwt.Parse(tokenString, t.returnVerificationKey)

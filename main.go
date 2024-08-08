@@ -24,9 +24,7 @@ func main() {
 
 	database, err := postgres.NewPostgresConnection(cfg)
 	if err != nil {
-		log.Fatalf(
-			"Error trying to connect to database, error=%s \n",
-			err.Error())
+		log.Fatalf("Error trying to connect to database, error=%s \n", err.Error())
 		return
 	}
 
@@ -35,7 +33,7 @@ func main() {
 	router := mux.NewRouter()
 	routes.InitRoutes(routesController, router)
 
-	logger.Info("Init server", zap.String("journey", "main"))
+	logger.Debug("Init server", zap.String("journey", "Bootstrap"))
 	http.ListenAndServe(":8080", router)
 }
 

@@ -22,6 +22,7 @@ type userDomainService struct {
 }
 
 func (ud *userDomainService) CreateUserServices(userDomain domain.UserDomain) (*domain.UserDomain, *rest_errors.RestErr) {
+	logger.Debug("Init CreateUser service", zap.String("journey", "CreateUser"))
 	hashPassword, err := util.HashSHA256(userDomain.Password)
 	if err != nil {
 		logger.Error("Error trying to call repository", err, zap.String("journey", "createUser"))
@@ -37,36 +38,37 @@ func (ud *userDomainService) CreateUserServices(userDomain domain.UserDomain) (*
 		return nil, restErr
 	}
 
-	logger.Info("CreateUser service executed successfully", zap.String("userId", userDomainRepository.ID), zap.String("journey", "createUser"))
-
+	logger.Debug("Finish CreateUser service", zap.String("journey", "CreateUser"))
 	return userDomainRepository, nil
 }
 
 func (ud *userDomainService) FindUserByUsernameServices(username string) (*[]domain.UserDomain, *rest_errors.RestErr) {
+	logger.Debug("Init FindUserByName service", zap.String("journey", "FindUserByName"))
 	usersDomainRepository, err := ud.repository.FindUserByUsername(username)
 	if err != nil {
 		logger.Error("Error trying to call repository", err, zap.String("journey", "FindUserByUsername"))
 		return &[]domain.UserDomain{}, err
 	}
 
-	logger.Info("Find user by username executed successfully", zap.String("journey", "FindUserByUsername"))
-
+	logger.Debug("Finish FindUserByName service", zap.String("journey", "FindUserByName"))
 	return usersDomainRepository, err
 }
 
 func (ud *userDomainService) FindUserByEmailServices(email string) (*[]domain.UserDomain, *rest_errors.RestErr) {
+	logger.Debug("Init FindUserByEmail service", zap.String("journey", "FindUserByEmail"))
 	usersDomainRepository, err := ud.repository.FindUserByEmail(email)
 	if err != nil {
 		logger.Error("Error trying to call repository", err, zap.String("journey", "FindUserByEmail"))
 		return &[]domain.UserDomain{}, err
 	}
 
-	logger.Info("Find user by email executed successfully", zap.String("journey", "FindUserByEmail"))
+	logger.Debug("Finish FindUserByEmail service", zap.String("journey", "FindUserByEmail"))
 
 	return usersDomainRepository, err
 }
 
 func (ud *userDomainService) LoginServices(userDomain domain.UserDomain) (*domain.UserDomain, *rest_errors.RestErr) {
+	logger.Debug("Init LoginServices service", zap.String("journey", "Login"))
 	userRepository, err := ud.repository.Login(userDomain)
 	if err != nil {
 		logger.Error("Error trying to call repository", err, zap.String("journey", "Login"))
@@ -79,5 +81,6 @@ func (ud *userDomainService) LoginServices(userDomain domain.UserDomain) (*domai
 		return nil, rest_errors.NewUnauthorizedError("Invalid username or password")
 	}
 
+	logger.Debug("Finish LoginServices service", zap.String("journey", "Login"))
 	return userRepository, nil
 }

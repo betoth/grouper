@@ -25,7 +25,7 @@ type userRepository struct {
 }
 
 func (ur *userRepository) CreateUser(userDomain domain.UserDomain) (*domain.UserDomain, *rest_errors.RestErr) {
-	logger.Info("CreateUser repository execution started", zap.String("journey", "createUser"))
+	logger.Debug("Init CreateUser repository", zap.String("journey", "createUser"))
 
 	userEntity := converter.ConvertUserDomainToEntity(&userDomain)
 
@@ -53,15 +53,14 @@ func (ur *userRepository) CreateUser(userDomain domain.UserDomain) (*domain.User
 	}
 
 	userCreatedDomain := converter.ConverterUserEntityToDomain(&userEntity)
-
-	logger.Info("CreateUser repository executed successfully", zap.String("userId", userCreatedDomain.ID), zap.String("journey", "createUser"))
+	logger.Debug("Finish CreateUser repository", zap.String("journey", "createUser"))
+	logger.Info("User created successfully", zap.String("userId", userCreatedDomain.ID), zap.String("journey", "createUser"))
 
 	return &userCreatedDomain, nil
 }
 
 func (ur *userRepository) FindUserByUsername(username string) (*[]domain.UserDomain, *rest_errors.RestErr) {
-	logger.Info("Start repository user find by username", zap.String("journey", "findUserByUsername"))
-
+	logger.Debug("Init FindUserByUsername repository", zap.String("journey", "FindUserByUsername"))
 	query := "SELECT id, name, email, username, createdat FROM users WHERE username = $1"
 
 	rows, err := ur.db.Query(query, username)
@@ -96,12 +95,12 @@ func (ur *userRepository) FindUserByUsername(username string) (*[]domain.UserDom
 		user := converter.ConverterUserEntityToDomain(&userEntity)
 		users = append(users, user)
 	}
-
+	logger.Debug("Finish FindUserByUsername repository", zap.String("journey", "FindUserByUsername"))
 	return &users, nil
 }
 
 func (ur *userRepository) FindUserByEmail(email string) (*[]domain.UserDomain, *rest_errors.RestErr) {
-	logger.Info("Start repository user find by email", zap.String("journey", "FindUserByEmail"))
+	logger.Debug("Init FindUserByEmail repository", zap.String("journey", "FindUserByEmail"))
 
 	query := "SELECT id, name, email, username, createdat FROM users WHERE email = $1"
 
@@ -138,15 +137,14 @@ func (ur *userRepository) FindUserByEmail(email string) (*[]domain.UserDomain, *
 		user := converter.ConverterUserEntityToDomain(&userEntity)
 		users = append(users, user)
 	}
-
+	logger.Debug("Finish FindUserByEmail repository", zap.String("journey", "FindUserByEmail"))
 	return &users, nil
 }
 
 func (ur *userRepository) Login(userDomain domain.UserDomain) (*domain.UserDomain, *rest_errors.RestErr) {
-	userEntity := converter.ConvertUserDomainToEntity(&userDomain)
+	logger.Debug("Init Login repository", zap.String("journey", "Login"))
 
-	logger.Info("Start repository Login",
-		zap.String("journey", "Login"))
+	userEntity := converter.ConvertUserDomainToEntity(&userDomain)
 
 	query := "SELECT password, id FROM users WHERE email = $1"
 
@@ -168,6 +166,6 @@ func (ur *userRepository) Login(userDomain domain.UserDomain) (*domain.UserDomai
 		}
 		userDomain = converter.ConverterUserEntityToDomain(&userEntity)
 	}
-
+	logger.Debug("Finish Login repository", zap.String("journey", "Login"))
 	return &userDomain, nil
 }

@@ -1,6 +1,8 @@
 package services
 
 import (
+	"grouper/adapter/input/model/dto"
+	dtoOut "grouper/adapter/output/model/dto"
 	"grouper/application/domain"
 	"grouper/application/port/input"
 	"grouper/application/port/output"
@@ -21,7 +23,7 @@ type groupDomainService struct {
 }
 
 func (gd *groupDomainService) CreateGroupService(groupDomain domain.GroupDomain) (*domain.GroupDomain, *rest_errors.RestErr) {
-
+	logger.Debug("Init CreateGroup service", zap.String("journey", "CreateGroup"))
 	groupDomainRepository, err := gd.repository.CreateGroup(groupDomain)
 
 	if err != nil {
@@ -29,29 +31,45 @@ func (gd *groupDomainService) CreateGroupService(groupDomain domain.GroupDomain)
 		return nil, err
 	}
 
-	logger.Info("CreateGroup service executed successfully", zap.String("userId", groupDomainRepository.ID), zap.String("journey", "CreateGroup"))
-
+	logger.Debug("Finish CreateGroup service", zap.String("journey", "CreateGroup"))
 	return groupDomainRepository, nil
 }
 
 func (gd *groupDomainService) JoinService(userID, groupID string) *rest_errors.RestErr {
-
+	logger.Debug("Init Join service", zap.String("journey", "JoinGroup"))
 	err := gd.repository.Join(userID, groupID)
 	if err != nil {
 		logger.Error("Error trying to call repository", err, zap.String("journey", "JoinGroup"))
 		return err
 	}
-	logger.Info("CreateGroup service executed successfully", zap.String("journey", "JoinGroup"))
+	logger.Debug("Finish Join service", zap.String("journey", "JoinGroup"))
 	return nil
 }
 
 func (gd *groupDomainService) LeaveService(userID, groupID string) *rest_errors.RestErr {
-
+	logger.Debug("Init Leave service", zap.String("journey", "LeaveGroup"))
 	err := gd.repository.Leave(userID, groupID)
 	if err != nil {
 		logger.Error("Error trying to call repository", err, zap.String("journey", "LeaveGroup"))
 		return err
 	}
-	logger.Info("LeaveGroup service executed successfully", zap.String("journey", "LeaveGroup"))
+	logger.Debug("Init Leave service", zap.String("journey", "LeaveGroup"))
 	return nil
+}
+
+func (gd *groupDomainService) GetGroupsService(parameter dto.GetGroupsQueryParameter) (*[]domain.GroupDomain, *rest_errors.RestErr) {
+	logger.Debug("Init GetGroups service", zap.String("journey", "GetGroups"))
+	queryParameter := dtoOut.GetGroupsQuery{
+		User:  parameter.User,
+		Topic: parameter.Topic,
+	}
+
+	groups, err := gd.repository.GetGroups(queryParameter)
+	if err != nil {
+		logger.Error("Error trying to call repository", err, zap.String("journey", "LeaveGroup"))
+		return nil, err
+	}
+
+	logger.Debug("Finish GetGroups service", zap.String("journey", "GetGroups"))
+	return groups, nil
 }

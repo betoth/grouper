@@ -2,12 +2,12 @@ package controller
 
 import (
 	"encoding/json"
-	"grouper/adapter/input/controller/response"
 	"grouper/adapter/input/converter"
 	"grouper/adapter/input/model/request"
 	resp "grouper/adapter/input/model/response"
+	"grouper/adapter/input/response"
 	"grouper/application/port/input"
-	util "grouper/application/util/secutiry"
+	"grouper/application/util/secutiry"
 	"grouper/config/logger"
 	"grouper/config/rest_errors"
 	"grouper/config/validation"
@@ -32,7 +32,7 @@ type userControllerInterface struct {
 }
 
 func (uc *userControllerInterface) CreateUser(w http.ResponseWriter, r *http.Request) {
-	logger.Info("Init createUser controller", zap.String("journey", "CreateUSer"))
+	logger.Debug("Init createUser controller", zap.String("journey", "CreateUSer"))
 
 	var userRequest request.UserRequest
 
@@ -74,11 +74,13 @@ func (uc *userControllerInterface) CreateUser(w http.ResponseWriter, r *http.Req
 		return
 	}
 
+	logger.Debug("Finish createUser controller", zap.String("journey", "CreateUSer"))
 	userResponse := converter.ConvertUserDomainToResponse(domainResult)
 	response.JSON(w, http.StatusCreated, userResponse)
 }
 
 func (uc *userControllerInterface) Login(w http.ResponseWriter, r *http.Request) {
+	logger.Debug("Init Login controller", zap.String("journey", "Login"))
 	var LoginRequest request.LoginRequest
 
 	err := json.NewDecoder(r.Body).Decode(&LoginRequest)
@@ -98,7 +100,7 @@ func (uc *userControllerInterface) Login(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	token, restErr := util.NewJwtToken().GenerateToken(domainResult.ID)
+	token, restErr := secutiry.NewJwtToken().GenerateToken(domainResult.ID)
 	if restErr != nil {
 		restErr := rest_errors.NewInternalServerError("Error trying to generate token")
 		logger.Error("Error trying to generate token", restErr, zap.String("journey", "Login"))
@@ -106,12 +108,14 @@ func (uc *userControllerInterface) Login(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
+	logger.Debug("Finish Login controller", zap.String("journey", "login"))
 	var tokenResp resp.LoginResponse
 	tokenResp.Token = token
 	response.JSON(w, http.StatusOK, tokenResp)
 }
 
 func checkUsernameAvailability(uc *userControllerInterface, username string) *rest_errors.RestErr {
+	logger.Debug("Init check username availability controller", zap.String("journey", "checkUsernameAvailability"))
 	usersWithUsername, restErr := uc.service.FindUserByUsernameServices(username)
 	if restErr != nil && restErr.Code != http.StatusNotFound {
 		logger.Error("Error validating username uniqueness", restErr, zap.String("username", username), zap.String("journey", "UserCheck"))
@@ -126,6 +130,7 @@ func checkUsernameAvailability(uc *userControllerInterface, username string) *re
 }
 
 func checkEmailAvailability(uc *userControllerInterface, email string) *rest_errors.RestErr {
+	logger.Debug("Init check email availability controller", zap.String("journey", "checkEmailAvailability"))
 	usersWithEmail, restErr := uc.service.FindUserByEmailServices(email)
 	if restErr != nil && restErr.Code != http.StatusNotFound {
 		logger.Error("Error validating email uniqueness", restErr, zap.String("email", email), zap.String("journey", "UserCheck"))

@@ -3,7 +3,9 @@ package repository
 import (
 	"context"
 	"database/sql"
+	"fmt"
 	"grouper/adapter/output/converter"
+	"grouper/adapter/output/model/dto"
 	"grouper/application/domain"
 	"grouper/application/port/output"
 	"grouper/config/logger"
@@ -24,7 +26,7 @@ type groupRepository struct {
 }
 
 func (gr *groupRepository) CreateGroup(groupDomain domain.GroupDomain) (*domain.GroupDomain, *rest_errors.RestErr) {
-	logger.Info("CreateGroup repository execution started", zap.String("journey", "CreateGroup"))
+	logger.Debug("Init CreateGroup repository", zap.String("journey", "CreateGroup"))
 
 	groupEntity := converter.ConvertGroupDomainToEntity(&groupDomain)
 
@@ -50,14 +52,13 @@ func (gr *groupRepository) CreateGroup(groupDomain domain.GroupDomain) (*domain.
 	}
 
 	groupCreatedDomain := converter.ConverterGroupEntityToDomain(&groupEntity)
-
-	logger.Info("CreateGroup repository executed successfully", zap.String("groupId", groupCreatedDomain.ID), zap.String("journey", "CreateGroup"))
-
+	logger.Debug("Finish CreateGroup repository", zap.String("journey", "CreateGroup"))
+	logger.Info("group created successfully", zap.String("groupId", groupCreatedDomain.ID), zap.String("journey", "CreateGroup"))
 	return &groupCreatedDomain, nil
 }
 
 func (gr *groupRepository) Join(userID, groupID string) *rest_errors.RestErr {
-	logger.Info("JoinGroup repository execution started", zap.String("journey", "JoinGroup"))
+	logger.Debug("Init JoinGroup repository", zap.String("journey", "JoinGroup"))
 
 	query := `INSERT INTO public.user_groups
 	(id, user_id, group_id, joined_at)
@@ -75,20 +76,19 @@ func (gr *groupRepository) Join(userID, groupID string) *rest_errors.RestErr {
 		logger.Error("Error while trying to join group", err, zap.String("journey", "JoinGroup"))
 		return rest_errors.NewInternalServerError("Failed to join group")
 	}
-
-	logger.Info("Successfully joined the group", zap.String("journey", "JoinGroup"))
+	logger.Debug("Finish JoinGroup repository", zap.String("journey", "JoinGroup"))
+	logger.Info("Successfully joined the group", zap.String("user_id", userID), zap.String("group_id", groupID), zap.String("journey", "JoinGroup"))
 	return nil
 }
 
 // isForeignKeyViolation checks if the error is a foreign key violation
 func isForeignKeyViolation(err error) bool {
-	// Example for PostgreSQL, adjust if using a different database
 	pgErr, ok := err.(*pq.Error)
 	return ok && pgErr.Code == "23503" // Foreign key violation error code
 }
 
 func (gr *groupRepository) Leave(userID, groupID string) *rest_errors.RestErr {
-	logger.Info("LeaveGroup repository execution started", zap.String("journey", "LeaveGroup"))
+	logger.Debug("Init Leave repository", zap.String("journey", "LeaveGroup"))
 
 	query := `DELETE FROM public.user_groups 
 	WHERE user_id = $1 AND group_id = $2
@@ -105,7 +105,46 @@ func (gr *groupRepository) Leave(userID, groupID string) *rest_errors.RestErr {
 		logger.Error("Error while trying to leave group", err, zap.String("journey", "LeaveGroup"))
 		return rest_errors.NewInternalServerError("Internal server error")
 	}
-
-	logger.Info("Successfully left the group", zap.String("journey", "LeaveGroup"))
+	logger.Debug("Finish Leave repository", zap.String("journey", "LeaveGroup"))
+	logger.Info("Successfully left the group", zap.String("user_id", userID), zap.String("group_id", groupID), zap.String("journey", "LeaveGroup"))
 	return nil
+}
+
+func (gr *groupRepository) GetGroups(parameters dto.GetGroupsQuery) (*[]domain.GroupDomain, *rest_errors.RestErr) {
+	logger.Debug("Init GetGroups repository", zap.String("journey", "GetGroups"))
+	var groups []domain.GroupDomain
+	query := `SELECT g.id, g."name" FROM user_groups ug 
+			  INNER JOIN "groups" g ON ug.group_id = g.id 
+			  WHERE 1=1`
+
+	args := []interface{}{}
+	argCounter := 1 // Inicializa o contador para os placeholders numerados
+
+	if parameters.User != "" {
+		query += fmt.Sprintf(" AND ug.user_id = $%d", argCounter)
+		args = append(args, parameters.User)
+		argCounter++
+	}
+
+	rows, err := gr.db.Query(query, args...)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			logger.Error("User is not a member of this group", err, zap.String("journey", "GetGroups"))
+			return nil, rest_errors.NewNotFoundError("User is not a member of this group")
+		}
+		logger.Error("Error while GetGroups", err, zap.String("journey", "GetGroups"))
+		return nil, rest_errors.NewInternalServerError("Internal server error")
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var group domain.GroupDomain
+		if err := rows.Scan(&group.ID, &group.Name); err != nil {
+			logger.Error("Error trying to get group in database", err, zap.String("journey", "GetGroups"))
+			return nil, rest_errors.NewInternalServerError(err.Error())
+		}
+		groups = append(groups, group)
+	}
+	logger.Debug("Finish GetGroups repository", zap.String("journey", "GetGroups"))
+	return &groups, nil
 }

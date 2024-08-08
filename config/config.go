@@ -1,6 +1,8 @@
 package config
 
-import "grouper/config/env"
+import (
+	"grouper/config/env"
+)
 
 type Config struct {
 	DBHost     string

@@ -1,8 +1,8 @@
 package middleware
 
 import (
-	"grouper/adapter/input/controller/response"
-	util "grouper/application/util/secutiry"
+	"grouper/adapter/input/response"
+	"grouper/application/util/secutiry"
 	"grouper/config/logger"
 	"grouper/config/rest_errors"
 	"net/http"
@@ -13,6 +13,7 @@ import (
 
 func Auth(next http.HandlerFunc) http.HandlerFunc {
 	return func(w http.ResponseWriter, r *http.Request) {
+		logger.Debug("Init auth middleware", zap.String("journey", "Auth"))
 		token := getFormatedToken(r)
 
 		if token == "" {
@@ -22,13 +23,14 @@ func Auth(next http.HandlerFunc) http.HandlerFunc {
 			return
 		}
 
-		auth := util.NewJwtToken().ValidateToken(token)
+		auth := secutiry.NewJwtToken().ValidateToken(token)
 		if !auth {
 			err := rest_errors.NewUnauthorizedError("Invalid token")
 			logger.Error("Error trying validate token", err, zap.String("journey", "Auth"))
 			response.JSON(w, err.Code, err)
 			return
 		}
+		logger.Debug("Finish auth middleware", zap.String("journey", "Auth"))
 		next(w, r)
 	}
 }

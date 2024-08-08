@@ -2,11 +2,13 @@ package controller
 
 import (
 	"encoding/json"
-	"grouper/adapter/input/controller/response"
 	"grouper/adapter/input/converter"
+	"grouper/adapter/input/model/dto"
 	"grouper/adapter/input/model/request"
+	resp "grouper/adapter/input/model/response"
+	"grouper/adapter/input/response"
 	"grouper/application/port/input"
-	util "grouper/application/util/secutiry"
+	"grouper/application/util/secutiry"
 	"grouper/config/logger"
 	"grouper/config/rest_errors"
 	"grouper/config/validation"
@@ -25,6 +27,7 @@ func NewGroupControllerInterface(serviceInterface input.GroupDomainService) Grou
 
 type GroupControllerInterface interface {
 	CreateGroup(w http.ResponseWriter, r *http.Request)
+	GetGroups(w http.ResponseWriter, r *http.Request)
 	Join(w http.ResponseWriter, r *http.Request)
 	Leave(w http.ResponseWriter, r *http.Request)
 }
@@ -34,10 +37,10 @@ type groupControllerInterface struct {
 }
 
 func (gc *groupControllerInterface) CreateGroup(w http.ResponseWriter, r *http.Request) {
-	logger.Info("Init createGroup controller", zap.String("journey", "CreateGroup"))
+	logger.Debug("Init createGroup controller", zap.String("journey", "CreateGroup"))
 	var groupRequest request.GroupRequest
 
-	userID, restErr := util.NewJwtToken().ExtractUserID(r)
+	userID, restErr := secutiry.NewJwtToken().ExtractUserID(r)
 	if restErr != nil {
 		logger.Error("Error trying to extract userID from token", restErr, zap.String("journey", "CreateGroup"))
 		response.JSON(w, restErr.Code, rest_errors.NewBadRequestError("Error trying to extrac from token"))
@@ -68,17 +71,18 @@ func (gc *groupControllerInterface) CreateGroup(w http.ResponseWriter, r *http.R
 		return
 	}
 
+	logger.Debug("finish createGroup controller", zap.String("journey", "CreateGroup"))
 	groupResponse := converter.ConvertGroupDomainToResponse(domainResult)
 	response.JSON(w, http.StatusCreated, groupResponse)
 }
 
 func (gc *groupControllerInterface) Join(w http.ResponseWriter, r *http.Request) {
-	logger.Info("Init Join controller", zap.String("journey", "JoinGroup"))
+	logger.Debug("Init Join controller", zap.String("journey", "JoinGroup"))
 
 	parameter := mux.Vars(r)
 	groupID := parameter["groupId"]
 
-	userID, err := util.NewJwtToken().ExtractUserID(r)
+	userID, err := secutiry.NewJwtToken().ExtractUserID(r)
 	if err != nil {
 		logger.Error("Error trying to extract userID from token", err, zap.String("journey", "JoinGroup"))
 		response.JSON(w, http.StatusBadRequest, rest_errors.NewBadRequestError("Error trying to extrac from token"))
@@ -91,16 +95,17 @@ func (gc *groupControllerInterface) Join(w http.ResponseWriter, r *http.Request)
 		response.JSON(w, errRest.Code, errRest)
 		return
 	}
+	logger.Debug("Finish Join controller", zap.String("journey", "JoinGroup"))
 	response.JSON(w, http.StatusCreated, nil)
 }
 
 func (gc *groupControllerInterface) Leave(w http.ResponseWriter, r *http.Request) {
-	logger.Info("Init Leave controller", zap.String("journey", "LeaveGroup"))
+	logger.Debug("Init Leave controller", zap.String("journey", "LeaveGroup"))
 
 	parameter := mux.Vars(r)
 	groupID := parameter["groupId"]
 
-	userID, err := util.NewJwtToken().ExtractUserID(r)
+	userID, err := secutiry.NewJwtToken().ExtractUserID(r)
 	if err != nil {
 		logger.Error("Error trying to extract userID from token", err, zap.String("journey", "LeaveGroup"))
 		response.JSON(w, http.StatusBadRequest, rest_errors.NewBadRequestError("Error trying to extrac from token"))
@@ -114,4 +119,30 @@ func (gc *groupControllerInterface) Leave(w http.ResponseWriter, r *http.Request
 		return
 	}
 	response.JSON(w, http.StatusCreated, nil)
+	logger.Debug("Finish Leave controller", zap.String("journey", "LeaveGroup"))
+}
+
+func (uc *groupControllerInterface) GetGroups(w http.ResponseWriter, r *http.Request) {
+	logger.Debug("Init GetGroups controller", zap.String("journey", "GetGroups"))
+
+	param := dto.GetGroupsQueryParameter{
+		User:  r.URL.Query().Get("user"),
+		Topic: r.URL.Query().Get("topic"),
+	}
+
+	groupsDomain, errRest := uc.service.GetGroupsService(param)
+	if errRest != nil {
+		logger.Error("Error trying GetGroupService", errRest, zap.String("journey", "GetGroups"))
+		response.JSON(w, errRest.Code, errRest)
+		return
+	}
+
+	var groups []resp.GroupResponse
+
+	for _, groupDomain := range *groupsDomain {
+		groups = append(groups, converter.ConvertGroupDomainToResponse(&groupDomain))
+	}
+
+	logger.Debug("Finish GetGroups controller", zap.String("journey", "GetGroups"))
+	response.JSON(w, http.StatusOK, groups)
 }
