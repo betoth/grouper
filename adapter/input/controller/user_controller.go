@@ -13,6 +13,7 @@ import (
 	"grouper/config/validation"
 	"net/http"
 
+	"github.com/gorilla/mux"
 	"go.uber.org/zap"
 )
 
@@ -25,6 +26,7 @@ func NewUserControllerInterface(serviceInterface input.UserDomainService) UserCo
 type UserControllerInterface interface {
 	CreateUser(w http.ResponseWriter, r *http.Request)
 	Login(w http.ResponseWriter, r *http.Request)
+	GetUserGroups(w http.ResponseWriter, r *http.Request)
 }
 
 type userControllerInterface struct {
@@ -142,4 +144,27 @@ func checkEmailAvailability(uc *userControllerInterface, email string) *rest_err
 		return rest_errors.NewConflictError("Email is already in use")
 	}
 	return nil
+}
+
+func (uc *userControllerInterface) GetUserGroups(w http.ResponseWriter, r *http.Request) {
+	logger.Debug("Init GetUserGroups controller", zap.String("journey", "GetUserGroups"))
+
+	param := mux.Vars(r)
+	UserID := param["userId"]
+
+	groupsDomain, errRest := uc.service.GetUserGroupsService(UserID)
+	if errRest != nil {
+		logger.Error("Error trying GetGroupService", errRest, zap.String("journey", "GetUserGroups"))
+		response.JSON(w, errRest.Code, errRest)
+		return
+	}
+
+	var groups []resp.GroupResponse
+
+	for _, groupDomain := range *groupsDomain {
+		groups = append(groups, converter.ConvertGroupDomainToResponse(&groupDomain))
+	}
+
+	logger.Debug("Finish GetUserGroups controller", zap.String("journey", "GetUserGroups"))
+	response.JSON(w, http.StatusOK, groups)
 }

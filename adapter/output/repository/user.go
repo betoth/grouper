@@ -169,3 +169,35 @@ func (ur *userRepository) Login(userDomain domain.UserDomain) (*domain.UserDomai
 	logger.Debug("Finish Login repository", zap.String("journey", "Login"))
 	return &userDomain, nil
 }
+
+func (ur *userRepository) GetUserGroups(userId string) (*[]domain.GroupDomain, *rest_errors.RestErr) {
+
+	logger.Debug("Init GetUserGroups repository", zap.String("journey", "GetUserGroups"))
+	var groups []domain.GroupDomain
+	query := `SELECT g.id, g."name" FROM user_groups ug 
+			  INNER JOIN "groups" g ON ug.group_id = g.id 
+			  WHERE ug.user_id = $1`
+
+	rows, err := ur.db.Query(query, userId)
+	if err != nil {
+		if err == sql.ErrNoRows {
+			logger.Error("User is not a member of any group", err, zap.String("journey", "GetUserGroups"))
+			return nil, rest_errors.NewNotFoundError("User is not a member of any group")
+		}
+		logger.Error("Error while GetUserGroups", err, zap.String("journey", "GetUserGroups"))
+		return nil, rest_errors.NewInternalServerError("Internal server error")
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var group domain.GroupDomain
+		if err := rows.Scan(&group.ID, &group.Name); err != nil {
+			logger.Error("Error trying to get group in database", err, zap.String("journey", "GetUserGroups"))
+			return nil, rest_errors.NewInternalServerError(err.Error())
+		}
+		groups = append(groups, group)
+	}
+	logger.Debug("Finish GetUserGroups repository", zap.String("journey", "GetUserGroups"))
+
+	return &groups, nil
+}

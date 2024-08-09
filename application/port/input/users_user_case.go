@@ -10,4 +10,5 @@ type UserDomainService interface {
 	FindUserByUsernameServices(username string) (*[]domain.UserDomain, *rest_errors.RestErr)
 	FindUserByEmailServices(email string) (*[]domain.UserDomain, *rest_errors.RestErr)
 	LoginServices(domain.UserDomain) (*domain.UserDomain, *rest_errors.RestErr)
+	GetUserGroupsService(userID string) (*[]domain.GroupDomain, *rest_errors.RestErr)
 }

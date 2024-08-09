@@ -10,4 +10,5 @@ type UserPort interface {
 	FindUserByUsername(username string) (*[]domain.UserDomain, *rest_errors.RestErr)
 	FindUserByEmail(email string) (*[]domain.UserDomain, *rest_errors.RestErr)
 	Login(userDomain domain.UserDomain) (*domain.UserDomain, *rest_errors.RestErr)
+	GetUserGroups(userID string) (*[]domain.GroupDomain, *rest_errors.RestErr)
 }

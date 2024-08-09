@@ -84,3 +84,16 @@ func (ud *userDomainService) LoginServices(userDomain domain.UserDomain) (*domai
 	logger.Debug("Finish LoginServices service", zap.String("journey", "Login"))
 	return userRepository, nil
 }
+
+func (ud *userDomainService) GetUserGroupsService(userID string) (*[]domain.GroupDomain, *rest_errors.RestErr) {
+	logger.Debug("Init GetUserGroups service", zap.String("journey", "GetUserGroups"))
+
+	groups, err := ud.repository.GetUserGroups(userID)
+	if err != nil {
+		logger.Error("Error trying to call repository", err, zap.String("journey", "GetUserGroups"))
+		return nil, err
+	}
+
+	logger.Debug("Finish GetUserGroups service", zap.String("journey", "GetUserGroups"))
+	return groups, nil
+}
