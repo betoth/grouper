@@ -126,8 +126,7 @@ func (uc *groupControllerInterface) GetGroups(w http.ResponseWriter, r *http.Req
 	logger.Debug("Init GetGroups controller", zap.String("journey", "GetGroups"))
 
 	param := dto.GetGroupsQueryParameter{
-		User:  r.URL.Query().Get("user"),
-		Topic: r.URL.Query().Get("topic"),
+		Name: r.URL.Query().Get("name"),
 	}
 
 	groupsDomain, errRest := uc.service.GetGroupsService(param)

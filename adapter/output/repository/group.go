@@ -113,29 +113,29 @@ func (gr *groupRepository) Leave(userID, groupID string) *rest_errors.RestErr {
 func (gr *groupRepository) GetGroups(parameters dto.GetGroupsQuery) (*[]domain.GroupDomain, *rest_errors.RestErr) {
 	logger.Debug("Init GetGroups repository", zap.String("journey", "GetGroups"))
 	var groups []domain.GroupDomain
-	query := `SELECT g.id, g."name" FROM user_groups ug 
-			  INNER JOIN "groups" g ON ug.group_id = g.id 
-			  WHERE 1=1`
+	query := `SELECT id, "name" FROM "groups" WHERE 1=1`
 
 	args := []interface{}{}
-	argCounter := 1 // Inicializa o contador para os placeholders numerados
+	argCounter := 1
 
-	if parameters.User != "" {
-		query += fmt.Sprintf(" AND ug.user_id = $%d", argCounter)
-		args = append(args, parameters.User)
+	if parameters.Name != "" {
+		query += fmt.Sprintf(" AND name ilike '%%' || LOWER($%d) || '%%' ", argCounter)
+		args = append(args, parameters.Name)
 		argCounter++
 	}
 
 	rows, err := gr.db.Query(query, args...)
 	if err != nil {
-		if err == sql.ErrNoRows {
-			logger.Error("User is not a member of this group", err, zap.String("journey", "GetGroups"))
-			return nil, rest_errors.NewNotFoundError("User is not a member of this group")
-		}
 		logger.Error("Error while GetGroups", err, zap.String("journey", "GetGroups"))
 		return nil, rest_errors.NewInternalServerError("Internal server error")
 	}
 	defer rows.Close()
+
+	if !rows.Next() {
+		err := rest_errors.NewNotFoundError("No group meets the search criteria")
+		logger.Error(err.Message, err, zap.String("journey", "GetGroups"))
+		return nil, err
+	}
 
 	for rows.Next() {
 		var group domain.GroupDomain
