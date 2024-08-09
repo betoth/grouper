@@ -1,6 +1,7 @@
 package middleware
 
 import (
+	"fmt"
 	"grouper/adapter/input/response"
 	"grouper/application/util/secutiry"
 	"grouper/config/logger"
@@ -33,6 +34,15 @@ func Auth(next http.HandlerFunc) http.HandlerFunc {
 		logger.Debug("Finish auth middleware", zap.String("journey", "Auth"))
 		next(w, r)
 	}
+}
+
+func LogRequest(next http.Handler) http.Handler {
+	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		logRequest := fmt.Sprintf("%s %s", r.Method, r.RequestURI)
+		logger.Debug("Request", zap.String("request_info", logRequest))
+
+		next.ServeHTTP(w, r)
+	})
 }
 
 func getFormatedToken(r *http.Request) string {
