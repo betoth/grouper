@@ -23,7 +23,7 @@ func ConvertGroupDomainToResponse(groupDomain *domain.GroupDomain) resp.GroupRes
 		Name:       groupDomain.Name,
 		UserID:     groupDomain.UserID,
 		TopicID:    groupDomain.TopicID,
-		SubTopicID: groupDomain.SubTopicID,
+		SubtopicID: groupDomain.SubtopicID,
 		CreatedAt:  groupDomain.CreatedAt,
 	}
 

@@ -1,8 +1,6 @@
 package repository
 
 import (
-	"context"
-	"database/sql"
 	"grouper/adapter/output/converter"
 	"grouper/adapter/output/model/entity"
 	"grouper/application/domain"
@@ -12,16 +10,17 @@ import (
 
 	_ "github.com/lib/pq"
 	"go.uber.org/zap"
+	"gorm.io/gorm"
 )
 
-func NewUserRepository(database *sql.DB) output.UserPort {
+func NewUserRepository(database *gorm.DB) output.UserPort {
 	return &userRepository{
 		database,
 	}
 }
 
 type userRepository struct {
-	db *sql.DB
+	db *gorm.DB
 }
 
 func (ur *userRepository) CreateUser(userDomain domain.UserDomain) (*domain.UserDomain, *rest_errors.RestErr) {
@@ -29,27 +28,9 @@ func (ur *userRepository) CreateUser(userDomain domain.UserDomain) (*domain.User
 
 	userEntity := converter.ConvertUserDomainToEntity(&userDomain)
 
-	query := `
-        INSERT INTO users ( name, email, username, password, createdat)
-        VALUES ($1, $2, $3, $4, $5)
-        RETURNING id, createdat
-    `
-
-	row := ur.db.QueryRowContext(
-		context.Background(),
-		query,
-		userEntity.Name,
-		userEntity.Email,
-		userEntity.Username,
-		userEntity.Password,
-		userEntity.CreatedAt,
-	)
-
-	err := row.Scan(&userEntity.ID, &userEntity.CreatedAt)
-	if err != nil {
+	if err := ur.db.Create(&userEntity).Error; err != nil {
 		logger.Error("Error trying to create user in database", err, zap.String("journey", "createUser"))
-		return nil, rest_errors.NewInternalServerError(err.Error())
-
+		return nil, rest_errors.NewInternalServerError("Internal server error")
 	}
 
 	userCreatedDomain := converter.ConverterUserEntityToDomain(&userEntity)
@@ -61,40 +42,29 @@ func (ur *userRepository) CreateUser(userDomain domain.UserDomain) (*domain.User
 
 func (ur *userRepository) FindUserByUsername(username string) (*[]domain.UserDomain, *rest_errors.RestErr) {
 	logger.Debug("Init FindUserByUsername repository", zap.String("journey", "FindUserByUsername"))
-	query := "SELECT id, name, email, username, createdat FROM users WHERE username = $1"
 
-	rows, err := ur.db.Query(query, username)
-	if err != nil {
+	var entities []entity.User
+	if err := ur.db.Where("username = ?", username).Find(&entities).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			logger.Error("No user with this username", err, zap.String("journey", "FindUserByUsername"))
+			return nil, rest_errors.NewNotFoundError("User not Found")
+		}
 		logger.Error("Error trying to search user in database", err, zap.String("journey", "FindUserByUsername"))
-		return nil, rest_errors.NewInternalServerError("")
+		return nil, rest_errors.NewInternalServerError("Internal server error")
 	}
-	defer rows.Close()
+
+	if len(entities) == 0 {
+		err := rest_errors.NewNotFoundError("User not Found")
+		logger.Error(err.Message, nil, zap.String("journey", "FindUserByUsername"))
+		return nil, err
+	}
 
 	var users []domain.UserDomain
-
-	for rows.Next() {
-		var userEntity entity.UserEntity
-
-		err := rows.Scan(
-			&userEntity.ID,
-			&userEntity.Name,
-			&userEntity.Email,
-			&userEntity.Username,
-			&userEntity.CreatedAt,
-		)
-		if err != nil {
-			if err == sql.ErrNoRows {
-				logger.Error(
-					"No user with this username", err, zap.String("journey", "FindUserByUsername"))
-				return nil, rest_errors.NewNotFoundError("User not found")
-			}
-			logger.Error(
-				"Error trying to scan user in database", err, zap.String("journey", "FindUserByUsername"))
-			return nil, rest_errors.NewInternalServerError("")
-		}
-		user := converter.ConverterUserEntityToDomain(&userEntity)
+	for _, entity := range entities {
+		user := converter.ConverterUserEntityToDomain(&entity)
 		users = append(users, user)
 	}
+
 	logger.Debug("Finish FindUserByUsername repository", zap.String("journey", "FindUserByUsername"))
 	return &users, nil
 }
@@ -102,41 +72,28 @@ func (ur *userRepository) FindUserByUsername(username string) (*[]domain.UserDom
 func (ur *userRepository) FindUserByEmail(email string) (*[]domain.UserDomain, *rest_errors.RestErr) {
 	logger.Debug("Init FindUserByEmail repository", zap.String("journey", "FindUserByEmail"))
 
-	query := "SELECT id, name, email, username, createdat FROM users WHERE email = $1"
-
-	rows, err := ur.db.Query(query, email)
-	if err != nil {
+	var entities []entity.User
+	if err := ur.db.Where("email = ?", email).Find(&entities).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
+			logger.Error("No user with this email", err, zap.String("journey", "FindUserByEmail"))
+			return nil, rest_errors.NewNotFoundError("User not found")
+		}
 		logger.Error("Error trying to search user in database", err, zap.String("journey", "FindUserByEmail"))
-		return nil, rest_errors.NewInternalServerError("")
+		return nil, rest_errors.NewInternalServerError("Internal server error")
 	}
 
-	defer rows.Close()
+	if len(entities) == 0 {
+		err := rest_errors.NewNotFoundError("User not found")
+		logger.Error(err.Message, nil, zap.String("journey", "FindUserByEmail"))
+		return nil, err
+	}
 
 	var users []domain.UserDomain
-
-	for rows.Next() {
-		var userEntity entity.UserEntity
-
-		err := rows.Scan(
-			&userEntity.ID,
-			&userEntity.Name,
-			&userEntity.Email,
-			&userEntity.Username,
-			&userEntity.CreatedAt,
-		)
-		if err != nil {
-			if err == sql.ErrNoRows {
-				logger.Error(
-					"No user with this username", err, zap.String("journey", "FindUserByEmail"))
-				return nil, rest_errors.NewNotFoundError("User not found")
-			}
-			logger.Error(
-				"Error trying to scan user in database", err, zap.String("journey", "FindUserByEmail"))
-			return nil, rest_errors.NewInternalServerError("")
-		}
-		user := converter.ConverterUserEntityToDomain(&userEntity)
+	for _, entity := range entities {
+		user := converter.ConverterUserEntityToDomain(&entity)
 		users = append(users, user)
 	}
+
 	logger.Debug("Finish FindUserByEmail repository", zap.String("journey", "FindUserByEmail"))
 	return &users, nil
 }
@@ -144,63 +101,42 @@ func (ur *userRepository) FindUserByEmail(email string) (*[]domain.UserDomain, *
 func (ur *userRepository) Login(userDomain domain.UserDomain) (*domain.UserDomain, *rest_errors.RestErr) {
 	logger.Debug("Init Login repository", zap.String("journey", "Login"))
 
-	userEntity := converter.ConvertUserDomainToEntity(&userDomain)
+	var userEntity entity.User
+	err := ur.db.Where("email = ?", userDomain.Email).First(&userEntity).Error
 
-	query := "SELECT password, id FROM users WHERE email = $1"
-
-	row, err := ur.db.Query(query, userEntity.Email)
 	if err != nil {
+		if err == gorm.ErrRecordNotFound {
+			logger.Error("No user with this email", err, zap.String("journey", "Login"))
+			return nil, rest_errors.NewNotFoundError("User not found")
+		}
 		logger.Error("Error trying to search user in database", err, zap.String("journey", "Login"))
-		return nil, rest_errors.NewInternalServerError("")
+		return nil, rest_errors.NewInternalServerError("Internal server error")
 	}
 
-	if row.Next() {
-		err = row.Scan(&userEntity.Password, &userEntity.ID)
-		if err != nil {
-			if err == sql.ErrNoRows {
-				logger.Error("No user with this email", err, zap.String("journey", "Login"))
-				return nil, rest_errors.NewNotFoundError("User not found")
-			}
-			logger.Error("Error trying to scan user in database", err, zap.String("journey", "Login"))
-			return nil, rest_errors.NewInternalServerError("")
-		}
-		userDomain = converter.ConverterUserEntityToDomain(&userEntity)
-	}
+	userDomain = converter.ConverterUserEntityToDomain(&userEntity)
+
 	logger.Debug("Finish Login repository", zap.String("journey", "Login"))
 	return &userDomain, nil
 }
 
 func (ur *userRepository) GetUserGroups(userId string) (*[]domain.GroupDomain, *rest_errors.RestErr) {
-
 	logger.Debug("Init GetUserGroups repository", zap.String("journey", "GetUserGroups"))
-	var groups []domain.GroupDomain
-	query := `SELECT g.id, g."name", t."name", st."name", g.created_at FROM user_groups ug 
-INNER JOIN "groups" g ON ug.group_id = g.id 
-inner join topic t on t.id = g.topic_id 
-inner join subtopic st on st.id = g.subtopic_id 
-WHERE ug.user_id = $1`
 
-	rows, err := ur.db.Query(query, userId)
-	if err != nil {
-		if err == sql.ErrNoRows {
+	var groups []domain.GroupDomain
+
+	if err := ur.db.Table("user_groups").
+		Select("g.id, g.name, g.created_at").
+		Joins("INNER JOIN groups g ON user_groups.group_id = g.id").
+		Where("user_groups.user_id = ?", userId).
+		Scan(&groups).Error; err != nil {
+		if err == gorm.ErrRecordNotFound {
 			logger.Error("User is not a member of any group", err, zap.String("journey", "GetUserGroups"))
 			return nil, rest_errors.NewNotFoundError("User is not a member of any group")
 		}
 		logger.Error("Error while GetUserGroups", err, zap.String("journey", "GetUserGroups"))
 		return nil, rest_errors.NewInternalServerError("Internal server error")
 	}
-	defer rows.Close()
 
-	for rows.Next() {
-		var group domain.GroupDomain
-		var topicName, subtopicName string
-		if err := rows.Scan(&group.ID, &group.Name, &topicName, &subtopicName, &group.CreatedAt); err != nil {
-			logger.Error("Error trying to get group in database", err, zap.String("journey", "GetUserGroups"))
-			return nil, rest_errors.NewInternalServerError(err.Error())
-		}
-		groups = append(groups, group)
-	}
 	logger.Debug("Finish GetUserGroups repository", zap.String("journey", "GetUserGroups"))
-
 	return &groups, nil
 }

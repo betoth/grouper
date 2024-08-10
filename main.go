@@ -1,7 +1,6 @@
 package main
 
 import (
-	"database/sql"
 	"grouper/adapter/input/controller"
 	"grouper/adapter/input/routes"
 	"grouper/adapter/output/repository"
@@ -15,6 +14,7 @@ import (
 
 	"github.com/gorilla/mux"
 	"go.uber.org/zap"
+	"gorm.io/gorm"
 )
 
 func main() {
@@ -37,7 +37,7 @@ func main() {
 	http.ListenAndServe(":8080", router)
 }
 
-func initDependencies(db *sql.DB) (controller.UserControllerInterface, controller.GroupControllerInterface) {
+func initDependencies(db *gorm.DB) (controller.UserControllerInterface, controller.GroupControllerInterface) {
 	userRepo := repository.NewUserRepository(db)
 	userService := services.NewUserServices(userRepo)
 

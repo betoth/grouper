@@ -22,7 +22,7 @@ func ConvertGroupRequestToDomain(groupRequest *request.GroupRequest) domain.Grou
 		ID:         "",
 		Name:       groupRequest.Name,
 		TopicID:    groupRequest.TopicID,
-		SubTopicID: groupRequest.SubTopicID,
+		SubtopicID: groupRequest.SubtopicID,
 		CreatedAt:  time.Now(),
 	}
 }

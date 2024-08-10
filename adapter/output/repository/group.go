@@ -1,10 +1,10 @@
 package repository
 
 import (
-	"context"
 	"database/sql"
 	"fmt"
 	"grouper/adapter/output/converter"
+	"grouper/adapter/output/model/entity"
 	"grouper/application/domain"
 	"grouper/application/dto"
 	"grouper/application/port/output"
@@ -13,75 +13,62 @@ import (
 
 	"github.com/lib/pq"
 	"go.uber.org/zap"
+	"gorm.io/gorm"
 )
 
-func NewGroupRepository(database *sql.DB) output.GroupPort {
+func NewGroupRepository(database *gorm.DB) output.GroupPort {
 	return &groupRepository{
 		database,
 	}
 }
 
 type groupRepository struct {
-	db *sql.DB
+	db *gorm.DB
 }
 
 func (gr *groupRepository) CreateGroup(groupDomain domain.GroupDomain) (*domain.GroupDomain, *rest_errors.RestErr) {
 	logger.Debug("Init CreateGroup repository", zap.String("journey", "CreateGroup"))
 
+	// Converte o domínio para a entidade
 	groupEntity := converter.ConvertGroupDomainToEntity(&groupDomain)
 
-	query := `
-	INSERT INTO groups (id, name, user_id, topic_id, subtopic_id, created_at) 
-	VALUES (gen_random_uuid(), $1, $2, $3, $4, $5)
-	RETURNING id, created_at;
-    `
-	fmt.Println(groupEntity.TopicID)
-	fmt.Println(groupEntity.SubTopicID)
-
-	row := gr.db.QueryRowContext(
-		context.Background(),
-		query,
-		groupEntity.Name,
-		groupEntity.UserID,
-		groupEntity.TopicID,
-		groupEntity.SubTopicID,
-		groupEntity.CreatedAt,
-	)
-
-	err := row.Scan(&groupEntity.ID, &groupEntity.CreatedAt)
-	if err != nil {
-		logger.Error("Error trying to create group in database", err, zap.String("journey", "CreateGroup"))
-		return nil, rest_errors.NewInternalServerError(err.Error())
-
+	// Insere o grupo no banco de dados usando GORM
+	result := gr.db.Create(&groupEntity)
+	if result.Error != nil {
+		logger.Error("Error trying to create group in database", result.Error, zap.String("journey", "CreateGroup"))
+		return nil, rest_errors.NewInternalServerError(result.Error.Error())
 	}
 
+	// Converte a entidade de volta para o domínio
 	groupCreatedDomain := converter.ConverterGroupEntityToDomain(&groupEntity)
+
+	// Log de sucesso
 	logger.Debug("Finish CreateGroup repository", zap.String("journey", "CreateGroup"))
-	logger.Info("group created successfully", zap.String("groupId", groupCreatedDomain.ID), zap.String("journey", "CreateGroup"))
+	logger.Info("Group created successfully", zap.String("groupId", groupCreatedDomain.ID), zap.String("journey", "CreateGroup"))
+
 	return &groupCreatedDomain, nil
 }
 
 func (gr *groupRepository) Join(userID, groupID string) *rest_errors.RestErr {
 	logger.Debug("Init JoinGroup repository", zap.String("journey", "JoinGroup"))
 
-	query := `INSERT INTO public.user_groups
-	(id, user_id, group_id, joined_at)
-	VALUES(gen_random_uuid(), $1, $2, now())
-	RETURNING id;`
+	userGroup := entity.UserGroup{
+		UserID:  userID,
+		GroupID: groupID,
+	}
+	result := gr.db.Create(&userGroup)
 
-	var insertID string
-
-	err := gr.db.QueryRow(query, userID, groupID).Scan(&insertID)
-	if err != nil {
-		if isForeignKeyViolation(err) {
-			logger.Error("Group ID does not exist", err, zap.String("journey", "JoinGroup"))
+	if result.Error != nil {
+		if isForeignKeyViolation(result.Error) {
+			logger.Error("Group ID does not exist", result.Error, zap.String("journey", "JoinGroup"))
 			return rest_errors.NewNotFoundError("Group not found")
 		}
-		logger.Error("Error while trying to join group", err, zap.String("journey", "JoinGroup"))
+		logger.Error("Error while trying to join group", result.Error, zap.String("journey", "JoinGroup"))
 		return rest_errors.NewInternalServerError("Failed to join group")
 	}
 	logger.Debug("Finish JoinGroup repository", zap.String("journey", "JoinGroup"))
 	logger.Info("Successfully joined the group", zap.String("user_id", userID), zap.String("group_id", groupID), zap.String("journey", "JoinGroup"))
+
 	return nil
 }
 
@@ -94,19 +81,15 @@ func isForeignKeyViolation(err error) bool {
 func (gr *groupRepository) Leave(userID, groupID string) *rest_errors.RestErr {
 	logger.Debug("Init Leave repository", zap.String("journey", "LeaveGroup"))
 
-	query := `DELETE FROM public.user_groups 
-	WHERE user_id = $1 AND group_id = $2
-	RETURNING id;`
+	var userGroup entity.UserGroup
 
-	var deletedID string
-
-	err := gr.db.QueryRow(query, userID, groupID).Scan(&deletedID)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			logger.Error("User is not a member of this group", err, zap.String("journey", "LeaveGroup"))
+	result := gr.db.Where("user_id = ? AND group_id = ?", userID, groupID).Delete(&userGroup)
+	if result.Error != nil {
+		if result.Error == sql.ErrNoRows {
+			logger.Error("User is not a member of this group", result.Error, zap.String("journey", "LeaveGroup"))
 			return rest_errors.NewNotFoundError("User is not a member of this group")
 		}
-		logger.Error("Error while trying to leave group", err, zap.String("journey", "LeaveGroup"))
+		logger.Error("Error while trying to leave group", result.Error, zap.String("journey", "LeaveGroup"))
 		return rest_errors.NewInternalServerError("Internal server error")
 	}
 	logger.Debug("Finish Leave repository", zap.String("journey", "LeaveGroup"))
@@ -116,39 +99,32 @@ func (gr *groupRepository) Leave(userID, groupID string) *rest_errors.RestErr {
 
 func (gr *groupRepository) GetGroups(parameters dto.GetGroupsParameter) (*[]domain.GroupDomain, *rest_errors.RestErr) {
 	logger.Debug("Init GetGroups repository", zap.String("journey", "GetGroups"))
-	var groups []domain.GroupDomain
-	query := `SELECT id, "name", created_at FROM "groups" WHERE 1=1`
 
-	args := []interface{}{}
-	argCounter := 1
+	var groupsEntity []entity.Group
+	dbQuery := gr.db.Model(&entity.Group{})
 
 	if parameters.Name != "" {
-		query += fmt.Sprintf(" AND name ilike '%%' || LOWER($%d) || '%%' ", argCounter)
-		args = append(args, parameters.Name)
-		argCounter++
+		dbQuery = dbQuery.Where("LOWER(name) LIKE ?", fmt.Sprintf("%%%s%%", parameters.Name))
 	}
 
-	rows, err := gr.db.Query(query, args...)
+	err := dbQuery.Find(&groupsEntity).Error
 	if err != nil {
 		logger.Error("Error while GetGroups", err, zap.String("journey", "GetGroups"))
 		return nil, rest_errors.NewInternalServerError("Internal server error")
 	}
-	defer rows.Close()
 
-	if !rows.Next() {
+	if len(groupsEntity) == 0 {
 		err := rest_errors.NewNotFoundError("No group meets the search criteria")
-		logger.Error(err.Message, err, zap.String("journey", "GetGroups"))
+		logger.Error(err.Message, nil, zap.String("journey", "GetGroups"))
 		return nil, err
 	}
 
-	for rows.Next() {
-		var group domain.GroupDomain
-		if err := rows.Scan(&group.ID, &group.Name, &group.CreatedAt); err != nil {
-			logger.Error("Error trying to get group in database", err, zap.String("journey", "GetGroups"))
-			return nil, rest_errors.NewInternalServerError(err.Error())
-		}
-		groups = append(groups, group)
+	var groupsDomain []domain.GroupDomain
+	for _, groupEntity := range groupsEntity {
+		groupDomain := converter.ConverterGroupEntityToDomain(&groupEntity)
+		groupsDomain = append(groupsDomain, groupDomain)
 	}
+
 	logger.Debug("Finish GetGroups repository", zap.String("journey", "GetGroups"))
-	return &groups, nil
+	return &groupsDomain, nil
 }

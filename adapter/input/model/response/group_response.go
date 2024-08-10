@@ -7,7 +7,7 @@ type GroupResponse struct {
 	Name       string    `json:"name"`
 	UserID     string    `json:"user_id,omitempty"`
 	TopicID    string    `json:"topic_id"`
-	SubTopicID string    `json:"subtopic_id"`
+	SubtopicID string    `json:"subtopic_id"`
 	CreatedAt  time.Time `json:"created_at"`
 }
 

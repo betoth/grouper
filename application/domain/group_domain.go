@@ -7,6 +7,6 @@ type GroupDomain struct {
 	Name       string
 	UserID     string
 	TopicID    string
-	SubTopicID string
+	SubtopicID string
 	CreatedAt  time.Time
 }

@@ -5,7 +5,7 @@ import (
 	"grouper/application/domain"
 )
 
-func ConverterUserEntityToDomain(userEntity *entity.UserEntity) domain.UserDomain {
+func ConverterUserEntityToDomain(userEntity *entity.User) domain.UserDomain {
 
 	return domain.UserDomain{
 		ID:        userEntity.ID,
@@ -17,14 +17,14 @@ func ConverterUserEntityToDomain(userEntity *entity.UserEntity) domain.UserDomai
 	}
 }
 
-func ConverterGroupEntityToDomain(groupEntity *entity.GroupEntity) domain.GroupDomain {
+func ConverterGroupEntityToDomain(groupEntity *entity.Group) domain.GroupDomain {
 
 	return domain.GroupDomain{
 		ID:         groupEntity.ID,
 		Name:       groupEntity.Name,
 		UserID:     groupEntity.UserID,
 		TopicID:    groupEntity.TopicID,
-		SubTopicID: groupEntity.SubTopicID,
+		SubtopicID: groupEntity.SubtopicID,
 		CreatedAt:  groupEntity.CreatedAt,
 	}
 }

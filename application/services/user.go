@@ -8,6 +8,7 @@ import (
 	util "grouper/application/util/secutiry"
 	"grouper/config/logger"
 	"grouper/config/rest_errors"
+	"net/http"
 
 	"go.uber.org/zap"
 )
@@ -71,7 +72,13 @@ func (ud *userDomainService) FindUserByEmailServices(email string) (*[]domain.Us
 func (ud *userDomainService) LoginServices(userDomain domain.UserDomain) (*domain.UserDomain, *rest_errors.RestErr) {
 	logger.Debug("Init LoginServices service", zap.String("journey", "Login"))
 	userRepository, err := ud.repository.Login(userDomain)
+
 	if err != nil {
+		if err.Code == http.StatusUnauthorized || err.Code == http.StatusNotFound {
+			logger.Error("User or password is invalid", err, zap.String("journey", "Login"))
+			return nil, rest_errors.NewUnauthorizedError("User or password is invalid")
+		}
+
 		logger.Error("Error trying to call repository", err, zap.String("journey", "Login"))
 		return nil, rest_errors.NewInternalServerError("")
 	}
