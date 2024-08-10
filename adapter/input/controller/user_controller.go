@@ -152,17 +152,17 @@ func (uc *userControllerInterface) GetUserGroups(w http.ResponseWriter, r *http.
 	param := mux.Vars(r)
 	UserID := param["userId"]
 
-	groupsDomain, errRest := uc.service.GetUserGroupsService(UserID)
+	groupsDto, errRest := uc.service.GetUserGroupsService(UserID)
 	if errRest != nil {
 		logger.Error("Error trying GetGroupService", errRest, zap.String("journey", "GetUserGroups"))
 		response.JSON(w, errRest.Code, errRest)
 		return
 	}
 
-	var groups []resp.GroupResponse
+	var groups []resp.GroupResponse2
 
-	for _, groupDomain := range *groupsDomain {
-		groups = append(groups, converter.ConvertGroupDomainToResponse(&groupDomain))
+	for _, groupDomain := range *groupsDto {
+		groups = append(groups, converter.ConvertGroupDtoToResponse(&groupDomain))
 	}
 
 	logger.Debug("Finish GetUserGroups controller", zap.String("journey", "GetUserGroups"))

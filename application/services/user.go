@@ -2,6 +2,7 @@ package services
 
 import (
 	"grouper/application/domain"
+	"grouper/application/dto"
 	"grouper/application/port/input"
 	"grouper/application/port/output"
 	util "grouper/application/util/secutiry"
@@ -85,15 +86,37 @@ func (ud *userDomainService) LoginServices(userDomain domain.UserDomain) (*domai
 	return userRepository, nil
 }
 
-func (ud *userDomainService) GetUserGroupsService(userID string) (*[]domain.GroupDomain, *rest_errors.RestErr) {
+func (ud *userDomainService) GetUserGroupsService(userID string) (*[]dto.GroupDTO, *rest_errors.RestErr) {
 	logger.Debug("Init GetUserGroups service", zap.String("journey", "GetUserGroups"))
 
-	groups, err := ud.repository.GetUserGroups(userID)
+	groupsRepo, err := ud.repository.GetUserGroups(userID)
 	if err != nil {
 		logger.Error("Error trying to call repository", err, zap.String("journey", "GetUserGroups"))
 		return nil, err
 	}
 
+	var groupsDto []dto.GroupDTO
+	for _, groupRepo := range *groupsRepo {
+
+		groupDto := dto.GroupDTO{
+			ID:       groupRepo.ID,
+			Name:     groupRepo.Name,
+			UserName: "UserNameDTO",
+			Topic: dto.GroupTopic{
+				ID:   "TopicDto ID",
+				Name: "TopicDto Name",
+				Subtopic: dto.GroupSubtopic{
+					ID:   "SubtopicDto ID",
+					Name: "SubtopicDTO Name",
+				},
+			},
+			CreatedAt: groupRepo.CreatedAt,
+		}
+
+		groupsDto = append(groupsDto, groupDto)
+
+	}
+
 	logger.Debug("Finish GetUserGroups service", zap.String("journey", "GetUserGroups"))
-	return groups, nil
+	return &groupsDto, nil
 }

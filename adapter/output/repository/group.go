@@ -117,7 +117,7 @@ func (gr *groupRepository) Leave(userID, groupID string) *rest_errors.RestErr {
 func (gr *groupRepository) GetGroups(parameters dto.GetGroupsParameter) (*[]domain.GroupDomain, *rest_errors.RestErr) {
 	logger.Debug("Init GetGroups repository", zap.String("journey", "GetGroups"))
 	var groups []domain.GroupDomain
-	query := `SELECT id, "name" FROM "groups" WHERE 1=1`
+	query := `SELECT id, "name", created_at FROM "groups" WHERE 1=1`
 
 	args := []interface{}{}
 	argCounter := 1
@@ -143,7 +143,7 @@ func (gr *groupRepository) GetGroups(parameters dto.GetGroupsParameter) (*[]doma
 
 	for rows.Next() {
 		var group domain.GroupDomain
-		if err := rows.Scan(&group.ID, &group.Name); err != nil {
+		if err := rows.Scan(&group.ID, &group.Name, &group.CreatedAt); err != nil {
 			logger.Error("Error trying to get group in database", err, zap.String("journey", "GetGroups"))
 			return nil, rest_errors.NewInternalServerError(err.Error())
 		}

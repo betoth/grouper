@@ -174,7 +174,7 @@ func (ur *userRepository) GetUserGroups(userId string) (*[]domain.GroupDomain, *
 
 	logger.Debug("Init GetUserGroups repository", zap.String("journey", "GetUserGroups"))
 	var groups []domain.GroupDomain
-	query := `SELECT g.id, g."name", t."name", st."name" FROM user_groups ug 
+	query := `SELECT g.id, g."name", t."name", st."name", g.created_at FROM user_groups ug 
 INNER JOIN "groups" g ON ug.group_id = g.id 
 inner join topic t on t.id = g.topic_id 
 inner join subtopic st on st.id = g.subtopic_id 
@@ -194,7 +194,7 @@ WHERE ug.user_id = $1`
 	for rows.Next() {
 		var group domain.GroupDomain
 		var topicName, subtopicName string
-		if err := rows.Scan(&group.ID, &group.Name, &topicName, &subtopicName); err != nil {
+		if err := rows.Scan(&group.ID, &group.Name, &topicName, &subtopicName, &group.CreatedAt); err != nil {
 			logger.Error("Error trying to get group in database", err, zap.String("journey", "GetUserGroups"))
 			return nil, rest_errors.NewInternalServerError(err.Error())
 		}

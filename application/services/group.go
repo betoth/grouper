@@ -87,6 +87,7 @@ func (gd *groupDomainService) GetGroupsService(parameter dto.GetGroupsParameter)
 					Name: "SubtopicDTO Name",
 				},
 			},
+			CreatedAt: groupRepo.CreatedAt,
 		}
 		groupsDto = append(groupsDto, groupDto)
 
