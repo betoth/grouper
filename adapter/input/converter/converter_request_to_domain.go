@@ -19,9 +19,11 @@ func ConvertUserRequestToDomain(userRequest *request.UserRequest) domain.UserDom
 
 func ConvertGroupRequestToDomain(groupRequest *request.GroupRequest) domain.GroupDomain {
 	return domain.GroupDomain{
-		ID:        "",
-		Name:      groupRequest.Name,
-		CreatedAt: time.Now(),
+		ID:         "",
+		Name:       groupRequest.Name,
+		TopicID:    groupRequest.TopicID,
+		SubTopicID: groupRequest.SubTopicID,
+		CreatedAt:  time.Now(),
 	}
 }
 

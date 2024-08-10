@@ -1,6 +1,6 @@
 package dto
 
-type GetGroupsQueryParameter struct {
+type GetGroupsParameter struct {
 	Topic string
 	Name  string
 }

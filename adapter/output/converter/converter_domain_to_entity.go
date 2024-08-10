@@ -20,9 +20,11 @@ func ConvertUserDomainToEntity(userDomain *domain.UserDomain) entity.UserEntity 
 func ConvertGroupDomainToEntity(groupDomain *domain.GroupDomain) entity.GroupEntity {
 
 	return entity.GroupEntity{
-		ID:        "",
-		Name:      groupDomain.Name,
-		UserID:    groupDomain.UserID,
-		CreatedAt: groupDomain.CreatedAt,
+		ID:         "",
+		Name:       groupDomain.Name,
+		UserID:     groupDomain.UserID,
+		TopicID:    groupDomain.TopicID,
+		SubTopicID: groupDomain.SubTopicID,
+		CreatedAt:  groupDomain.CreatedAt,
 	}
 }

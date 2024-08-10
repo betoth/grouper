@@ -24,19 +24,48 @@ CREATE TABLE users (
 
 GRANT ALL PRIVILEGES ON TABLE users TO groupe;
 
-DROP TABLE IF EXISTS group;
+CREATE TABLE topic (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name VARCHAR(255) NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+GRANT ALL PRIVILEGES ON TABLE topic TO groupe;
 
-CREATE TABLE group (
+CREATE TABLE subtopic (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name VARCHAR(255) NOT NULL,
+    topic_id UUID NOT NULL,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    CONSTRAINT fk_topic
+      FOREIGN KEY(topic_id) 
+      REFERENCES topic(id)
+);
+
+GRANT ALL PRIVILEGES ON TABLE subtopic TO groupe;
+
+
+DROP TABLE IF EXISTS "groups";
+
+CREATE TABLE "groups" (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name VARCHAR(255) NOT NULL,
     user_id UUID NOT NULL,
+    topic_id UUID,
+    subtopic_id UUID,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     CONSTRAINT fk_user
       FOREIGN KEY(user_id) 
-	  REFERENCES users(id)
+      REFERENCES users(id),
+    CONSTRAINT fk_topic
+      FOREIGN KEY(topic_id) 
+      REFERENCES topic(id),
+    CONSTRAINT fk_subtopic
+      FOREIGN KEY(subtopic_id) 
+      REFERENCES subtopic(id)
 );
 
-GRANT ALL PRIVILEGES ON TABLE group TO groupe;
+
+GRANT ALL PRIVILEGES ON TABLE "groups" TO groupe;
 
 DROP TABLE IF EXISTS user_groups;
 

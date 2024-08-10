@@ -1,9 +1,8 @@
 package services
 
 import (
-	"grouper/adapter/input/model/dto"
-	dtoOut "grouper/adapter/output/model/dto"
 	"grouper/application/domain"
+	"grouper/application/dto"
 	"grouper/application/port/input"
 	"grouper/application/port/output"
 	"grouper/config/logger"
@@ -57,22 +56,42 @@ func (gd *groupDomainService) LeaveService(userID, groupID string) *rest_errors.
 	return nil
 }
 
-func (gd *groupDomainService) GetGroupsService(parameter dto.GetGroupsQueryParameter) (*[]domain.GroupDomain, *rest_errors.RestErr) {
+func (gd *groupDomainService) GetGroupsService(parameter dto.GetGroupsParameter) (*[]dto.GroupDTO, *rest_errors.RestErr) {
 	logger.Debug("Init GetGroups service", zap.String("journey", "GetGroups"))
-	queryParameter := dtoOut.GetGroupsQuery{
+	queryParameter := dto.GetGroupsParameter{
 		Name: parameter.Name,
 	}
 
-	groups, err := gd.repository.GetGroups(queryParameter)
+	groupsRepo, err := gd.repository.GetGroups(queryParameter)
 	if err != nil {
 		logger.Error("Error trying to call repository", err, zap.String("journey", "GetGroups"))
 		return nil, err
 	}
-
-	if groups == nil {
+	if groupsRepo == nil {
 		logger.Error("Error trying to call repository", err, zap.String("journey", "GetGroups"))
 		return nil, err
 	}
+
+	var groupsDto []dto.GroupDTO
+	for _, groupRepo := range *groupsRepo {
+
+		groupDto := dto.GroupDTO{
+			ID:       groupRepo.ID,
+			Name:     groupRepo.Name,
+			UserName: "UserNameDTO",
+			Topic: dto.GroupTopic{
+				ID:   "TopicDto ID",
+				Name: "TopicDto Name",
+				Subtopic: dto.GroupSubtopic{
+					ID:   "SubtopicDto ID",
+					Name: "SubtopicDTO Name",
+				},
+			},
+		}
+		groupsDto = append(groupsDto, groupDto)
+
+	}
+
 	logger.Debug("Finish GetGroups service", zap.String("journey", "GetGroups"))
-	return groups, nil
+	return &groupsDto, nil
 }

@@ -3,6 +3,7 @@ package converter
 import (
 	resp "grouper/adapter/input/model/response"
 	"grouper/application/domain"
+	"grouper/application/dto"
 )
 
 func ConvertUserDomainToResponse(userDomain *domain.UserDomain) resp.UserResponse {
@@ -18,10 +19,30 @@ func ConvertUserDomainToResponse(userDomain *domain.UserDomain) resp.UserRespons
 
 func ConvertGroupDomainToResponse(groupDomain *domain.GroupDomain) resp.GroupResponse {
 	return resp.GroupResponse{
-		ID:        groupDomain.ID,
-		Name:      groupDomain.Name,
-		UserID:    groupDomain.UserID,
-		CreatedAt: groupDomain.CreatedAt,
+		ID:         groupDomain.ID,
+		Name:       groupDomain.Name,
+		UserID:     groupDomain.UserID,
+		TopicID:    groupDomain.TopicID,
+		SubTopicID: groupDomain.SubTopicID,
+		CreatedAt:  groupDomain.CreatedAt,
+	}
+
+}
+
+func ConvertGroupDtoToResponse(groupDto *dto.GroupDTO) resp.GroupResponse2 {
+	return resp.GroupResponse2{
+		ID:       groupDto.ID,
+		Name:     groupDto.Name,
+		UserName: groupDto.UserName,
+		Topic: resp.Topic{
+			ID:   groupDto.Topic.ID,
+			Name: groupDto.Topic.Name,
+			Subtopic: resp.Subtopic{
+				ID:   groupDto.Topic.Subtopic.ID,
+				Name: groupDto.Topic.Subtopic.Name,
+			},
+		},
+		CreatedAt: groupDto.CreatedAt,
 	}
 
 }

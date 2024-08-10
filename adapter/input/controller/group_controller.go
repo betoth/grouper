@@ -3,10 +3,10 @@ package controller
 import (
 	"encoding/json"
 	"grouper/adapter/input/converter"
-	"grouper/adapter/input/model/dto"
 	"grouper/adapter/input/model/request"
 	resp "grouper/adapter/input/model/response"
 	"grouper/adapter/input/response"
+	"grouper/application/dto"
 	"grouper/application/port/input"
 	"grouper/application/util/secutiry"
 	"grouper/config/logger"
@@ -125,7 +125,7 @@ func (gc *groupControllerInterface) Leave(w http.ResponseWriter, r *http.Request
 func (uc *groupControllerInterface) GetGroups(w http.ResponseWriter, r *http.Request) {
 	logger.Debug("Init GetGroups controller", zap.String("journey", "GetGroups"))
 
-	param := dto.GetGroupsQueryParameter{
+	param := dto.GetGroupsParameter{
 		Name: r.URL.Query().Get("name"),
 	}
 
@@ -136,10 +136,10 @@ func (uc *groupControllerInterface) GetGroups(w http.ResponseWriter, r *http.Req
 		return
 	}
 
-	var groups []resp.GroupResponse
+	var groups []resp.GroupResponse2
 
 	for _, groupDomain := range *groupsDomain {
-		groups = append(groups, converter.ConvertGroupDomainToResponse(&groupDomain))
+		groups = append(groups, converter.ConvertGroupDtoToResponse(&groupDomain))
 	}
 
 	logger.Debug("Finish GetGroups controller", zap.String("journey", "GetGroups"))

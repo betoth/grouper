@@ -5,8 +5,8 @@ import (
 	"database/sql"
 	"fmt"
 	"grouper/adapter/output/converter"
-	"grouper/adapter/output/model/dto"
 	"grouper/application/domain"
+	"grouper/application/dto"
 	"grouper/application/port/output"
 	"grouper/config/logger"
 	"grouper/config/rest_errors"
@@ -31,16 +31,20 @@ func (gr *groupRepository) CreateGroup(groupDomain domain.GroupDomain) (*domain.
 	groupEntity := converter.ConvertGroupDomainToEntity(&groupDomain)
 
 	query := `
-	INSERT INTO groups (id, name, user_id, created_at) 
-	VALUES (gen_random_uuid(), $1, $2, $3)
+	INSERT INTO groups (id, name, user_id, topic_id, subtopic_id, created_at) 
+	VALUES (gen_random_uuid(), $1, $2, $3, $4, $5)
 	RETURNING id, created_at;
     `
+	fmt.Println(groupEntity.TopicID)
+	fmt.Println(groupEntity.SubTopicID)
 
 	row := gr.db.QueryRowContext(
 		context.Background(),
 		query,
 		groupEntity.Name,
 		groupEntity.UserID,
+		groupEntity.TopicID,
+		groupEntity.SubTopicID,
 		groupEntity.CreatedAt,
 	)
 
@@ -110,7 +114,7 @@ func (gr *groupRepository) Leave(userID, groupID string) *rest_errors.RestErr {
 	return nil
 }
 
-func (gr *groupRepository) GetGroups(parameters dto.GetGroupsQuery) (*[]domain.GroupDomain, *rest_errors.RestErr) {
+func (gr *groupRepository) GetGroups(parameters dto.GetGroupsParameter) (*[]domain.GroupDomain, *rest_errors.RestErr) {
 	logger.Debug("Init GetGroups repository", zap.String("journey", "GetGroups"))
 	var groups []domain.GroupDomain
 	query := `SELECT id, "name" FROM "groups" WHERE 1=1`
