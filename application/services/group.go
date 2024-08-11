@@ -21,17 +21,32 @@ type groupDomainService struct {
 	repository output.GroupPort
 }
 
-func (gd *groupDomainService) CreateGroupService(groupDomain domain.GroupDomain) (*domain.GroupDomain, *rest_errors.RestErr) {
+func (gd *groupDomainService) CreateGroupService(groupDomain domain.GroupDomain) (*dto.GroupDTO, *rest_errors.RestErr) {
 	logger.Debug("Init CreateGroup service", zap.String("journey", "CreateGroup"))
-	groupDomainRepository, err := gd.repository.CreateGroup(groupDomain)
+	groupRepo, err := gd.repository.CreateGroup(groupDomain)
 
 	if err != nil {
 		logger.Error("Error trying to call repository", err, zap.String("journey", "createUser"))
 		return nil, err
 	}
 
+	groupDto := dto.GroupDTO{
+		ID:       groupRepo.ID,
+		Name:     groupRepo.Name,
+		UserName: "UserNameDTO",
+		Topic: dto.GroupTopic{
+			ID:   "TopicDto ID",
+			Name: "TopicDto Name",
+			Subtopic: dto.GroupSubtopic{
+				ID:   "SubtopicDto ID",
+				Name: "SubtopicDTO Name",
+			},
+		},
+		CreatedAt: groupRepo.CreatedAt,
+	}
+
 	logger.Debug("Finish CreateGroup service", zap.String("journey", "CreateGroup"))
-	return groupDomainRepository, nil
+	return &groupDto, nil
 }
 
 func (gd *groupDomainService) JoinService(userID, groupID string) *rest_errors.RestErr {

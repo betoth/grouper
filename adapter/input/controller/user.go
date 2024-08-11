@@ -17,72 +17,73 @@ import (
 	"go.uber.org/zap"
 )
 
-func NewUserControllerInterface(serviceInterface input.UserDomainService) UserControllerInterface {
-	return &userControllerInterface{
+func NewUserController(serviceInterface input.UserDomainService) UserController {
+	return &userController{
 		service: serviceInterface,
 	}
 }
 
-type UserControllerInterface interface {
-	CreateUser(w http.ResponseWriter, r *http.Request)
+type UserController interface {
+	Create(w http.ResponseWriter, r *http.Request)
 	Login(w http.ResponseWriter, r *http.Request)
-	GetUserGroups(w http.ResponseWriter, r *http.Request)
+	GetGroups(w http.ResponseWriter, r *http.Request)
 }
 
-type userControllerInterface struct {
+type userController struct {
 	service input.UserDomainService
 }
 
-func (uc *userControllerInterface) CreateUser(w http.ResponseWriter, r *http.Request) {
-	logger.Debug("Init createUser controller", zap.String("journey", "CreateUSer"))
+func (ctrl *userController) Create(w http.ResponseWriter, r *http.Request) {
+	logger.Debug("Init CreateUser controller", zap.String("journey", "CreateUser"))
 
 	var userRequest request.UserRequest
 
 	err := json.NewDecoder(r.Body).Decode(&userRequest)
 	if err != nil {
 		restErr := rest_errors.NewBadRequestError(err.Error())
-		logger.Error("Error trying to validate user info", err, zap.String("journey", "createUser"))
+		logger.Error("Error trying to validate user info", err, zap.String("journey", "CreateUser"))
 		response.JSON(w, restErr.Code, restErr)
 		return
 	}
 
 	validationErr := validation.ValidateUserRequest(&userRequest)
 	if validationErr != nil {
-		logger.Error("Validation failed", validationErr, zap.String("journey", "createUser"))
+		logger.Error("Validation failed", validationErr, zap.String("journey", "CreateUser"))
 		response.JSON(w, http.StatusBadRequest, validationErr)
 		return
 	}
 
 	userDomain := converter.ConvertUserRequestToDomain(&userRequest)
 
-	restErr := checkUsernameAvailability(uc, userDomain.Username)
+	restErr := checkUsernameAvailability(ctrl, userDomain.Username)
 	if restErr != nil {
-		logger.Error("Username validation failed", restErr, zap.String("journey", "createUser"))
+		logger.Error("Username validation failed", restErr, zap.String("journey", "CreateUser"))
 		response.JSON(w, restErr.Code, err)
 		return
 	}
 
-	restErr = checkEmailAvailability(uc, userDomain.Email)
+	restErr = checkEmailAvailability(ctrl, userDomain.Email)
 	if restErr != nil {
-		logger.Error("Email validation failed", err, zap.String("journey", "createUser"))
+		logger.Error("Email validation failed", restErr, zap.String("journey", "CreateUser"))
 		response.JSON(w, restErr.Code, restErr)
 		return
 	}
 
-	domainResult, restErr := uc.service.CreateUserServices(userDomain)
+	domainResult, restErr := ctrl.service.CreateUserServices(userDomain)
 	if restErr != nil {
-		logger.Error("Error trying to call CreateUser service", restErr, zap.String("journey", "createUser"))
+		logger.Error("Error trying to call CreateUser service", restErr, zap.String("journey", "CreateUser"))
 		response.JSON(w, restErr.Code, restErr)
 		return
 	}
-
-	logger.Debug("Finish createUser controller", zap.String("journey", "CreateUSer"))
 	userResponse := converter.ConvertUserDomainToResponse(domainResult)
+
+	logger.Debug("Finish CreateUser controller", zap.String("journey", "CreateUser"))
 	response.JSON(w, http.StatusCreated, userResponse)
 }
 
-func (uc *userControllerInterface) Login(w http.ResponseWriter, r *http.Request) {
+func (ctrl *userController) Login(w http.ResponseWriter, r *http.Request) {
 	logger.Debug("Init Login controller", zap.String("journey", "Login"))
+
 	var LoginRequest request.LoginRequest
 
 	err := json.NewDecoder(r.Body).Decode(&LoginRequest)
@@ -95,7 +96,7 @@ func (uc *userControllerInterface) Login(w http.ResponseWriter, r *http.Request)
 
 	userDomain := converter.ConvertLoginRequestToUserDomain(&LoginRequest)
 
-	domainResult, restErr := uc.service.LoginServices(userDomain)
+	domainResult, restErr := ctrl.service.LoginServices(userDomain)
 	if restErr != nil {
 		logger.Error("Error trying to call Login service", restErr, zap.String("journey", "Login"))
 		response.JSON(w, restErr.Code, restErr)
@@ -109,16 +110,18 @@ func (uc *userControllerInterface) Login(w http.ResponseWriter, r *http.Request)
 		response.JSON(w, restErr.Code, restErr)
 		return
 	}
+	tokenResp := resp.LoginResponse{Token: token}
 
 	logger.Debug("Finish Login controller", zap.String("journey", "login"))
-	var tokenResp resp.LoginResponse
-	tokenResp.Token = token
 	response.JSON(w, http.StatusOK, tokenResp)
 }
 
-func checkUsernameAvailability(uc *userControllerInterface, username string) *rest_errors.RestErr {
+// TODO:Passar esse metodo pro service
+func checkUsernameAvailability(ctrl *userController, username string) *rest_errors.RestErr {
 	logger.Debug("Init check username availability controller", zap.String("journey", "checkUsernameAvailability"))
-	usersWithUsername, restErr := uc.service.FindUserByUsernameServices(username)
+
+	usersWithUsername, restErr := ctrl.service.FindUserByUsernameServices(username)
+
 	if restErr != nil && restErr.Code != http.StatusNotFound {
 		logger.Error("Error validating username uniqueness", restErr, zap.String("username", username), zap.String("journey", "UserCheck"))
 		return rest_errors.NewInternalServerError("Error validating username uniqueness: " + restErr.Error())
@@ -131,9 +134,12 @@ func checkUsernameAvailability(uc *userControllerInterface, username string) *re
 	return nil
 }
 
-func checkEmailAvailability(uc *userControllerInterface, email string) *rest_errors.RestErr {
+// TODO:Passar esse metodo pro service
+func checkEmailAvailability(ctrl *userController, email string) *rest_errors.RestErr {
 	logger.Debug("Init check email availability controller", zap.String("journey", "checkEmailAvailability"))
-	usersWithEmail, restErr := uc.service.FindUserByEmailServices(email)
+
+	usersWithEmail, restErr := ctrl.service.FindUserByEmailServices(email)
+
 	if restErr != nil && restErr.Code != http.StatusNotFound {
 		logger.Error("Error validating email uniqueness", restErr, zap.String("email", email), zap.String("journey", "UserCheck"))
 		return rest_errors.NewInternalServerError("Error validating email uniqueness: " + restErr.Error())
@@ -146,20 +152,27 @@ func checkEmailAvailability(uc *userControllerInterface, email string) *rest_err
 	return nil
 }
 
-func (uc *userControllerInterface) GetUserGroups(w http.ResponseWriter, r *http.Request) {
-	logger.Debug("Init GetUserGroups controller", zap.String("journey", "GetUserGroups"))
+func (ctrl *userController) GetGroups(w http.ResponseWriter, r *http.Request) {
+	logger.Debug("Init GetGroups controller", zap.String("journey", "GetUserGroups"))
 
 	param := mux.Vars(r)
-	UserID := param["userId"]
+	userID := param["userId"]
 
-	groupsDto, errRest := uc.service.GetUserGroupsService(UserID)
+	if userID == "" {
+		restErr := rest_errors.NewBadRequestError("userId is required")
+		logger.Error("UserID is missing", nil, zap.String("journey", "GetUserGroups"))
+		response.JSON(w, restErr.Code, restErr)
+		return
+	}
+
+	groupsDto, errRest := ctrl.service.GetUserGroupsService(userID)
 	if errRest != nil {
 		logger.Error("Error trying GetGroupService", errRest, zap.String("journey", "GetUserGroups"))
 		response.JSON(w, errRest.Code, errRest)
 		return
 	}
 
-	var groups []resp.GroupResponse2
+	var groups []resp.GroupResponse
 
 	for _, groupDomain := range *groupsDto {
 		groups = append(groups, converter.ConvertGroupDtoToResponse(&groupDomain))

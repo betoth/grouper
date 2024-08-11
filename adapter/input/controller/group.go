@@ -18,25 +18,25 @@ import (
 	"go.uber.org/zap"
 )
 
-func NewGroupControllerInterface(serviceInterface input.GroupDomainService) GroupControllerInterface {
+func NewGroupController(serviceInterface input.GroupDomainService) GroupController {
 
-	return &groupControllerInterface{
+	return &groupController{
 		service: serviceInterface,
 	}
 }
 
-type GroupControllerInterface interface {
-	CreateGroup(w http.ResponseWriter, r *http.Request)
+type GroupController interface {
+	Create(w http.ResponseWriter, r *http.Request)
 	GetGroups(w http.ResponseWriter, r *http.Request)
 	Join(w http.ResponseWriter, r *http.Request)
 	Leave(w http.ResponseWriter, r *http.Request)
 }
 
-type groupControllerInterface struct {
+type groupController struct {
 	service input.GroupDomainService
 }
 
-func (gc *groupControllerInterface) CreateGroup(w http.ResponseWriter, r *http.Request) {
+func (ctrl *groupController) Create(w http.ResponseWriter, r *http.Request) {
 	logger.Debug("Init createGroup controller", zap.String("journey", "CreateGroup"))
 	var groupRequest request.GroupRequest
 
@@ -64,7 +64,7 @@ func (gc *groupControllerInterface) CreateGroup(w http.ResponseWriter, r *http.R
 	groupDomain := converter.ConvertGroupRequestToDomain(&groupRequest)
 	groupDomain.UserID = userID
 
-	domainResult, restErr := gc.service.CreateGroupService(groupDomain)
+	domainResult, restErr := ctrl.service.CreateGroupService(groupDomain)
 	if restErr != nil {
 		logger.Error("Error trying to call CreateGroup service", restErr, zap.String("journey", "CreateGroup"))
 		response.JSON(w, restErr.Code, restErr)
@@ -72,11 +72,11 @@ func (gc *groupControllerInterface) CreateGroup(w http.ResponseWriter, r *http.R
 	}
 
 	logger.Debug("finish createGroup controller", zap.String("journey", "CreateGroup"))
-	groupResponse := converter.ConvertGroupDomainToResponse(domainResult)
+	groupResponse := converter.ConvertGroupDtoToResponse(domainResult)
 	response.JSON(w, http.StatusCreated, groupResponse)
 }
 
-func (gc *groupControllerInterface) Join(w http.ResponseWriter, r *http.Request) {
+func (ctrl *groupController) Join(w http.ResponseWriter, r *http.Request) {
 	logger.Debug("Init Join controller", zap.String("journey", "JoinGroup"))
 
 	parameter := mux.Vars(r)
@@ -89,7 +89,7 @@ func (gc *groupControllerInterface) Join(w http.ResponseWriter, r *http.Request)
 		return
 	}
 
-	errRest := gc.service.JoinService(userID, groupID)
+	errRest := ctrl.service.JoinService(userID, groupID)
 	if errRest != nil {
 		logger.Error(errRest.Err, err, zap.String("journey", "JoinGroup"))
 		response.JSON(w, errRest.Code, errRest)
@@ -99,11 +99,17 @@ func (gc *groupControllerInterface) Join(w http.ResponseWriter, r *http.Request)
 	response.JSON(w, http.StatusCreated, nil)
 }
 
-func (gc *groupControllerInterface) Leave(w http.ResponseWriter, r *http.Request) {
+func (ctrl *groupController) Leave(w http.ResponseWriter, r *http.Request) {
 	logger.Debug("Init Leave controller", zap.String("journey", "LeaveGroup"))
 
 	parameter := mux.Vars(r)
 	groupID := parameter["groupId"]
+	if groupID == "" {
+		restErr := rest_errors.NewBadRequestError("groupId is required")
+		logger.Error("groupId is missing", nil, zap.String("journey", "LeaveGroup"))
+		response.JSON(w, restErr.Code, restErr)
+		return
+	}
 
 	userID, err := secutiry.NewJwtToken().ExtractUserID(r)
 	if err != nil {
@@ -112,34 +118,35 @@ func (gc *groupControllerInterface) Leave(w http.ResponseWriter, r *http.Request
 		return
 	}
 
-	errRest := gc.service.LeaveService(userID, groupID)
+	errRest := ctrl.service.LeaveService(userID, groupID)
 	if errRest != nil {
 		logger.Error("Error trying LeaveService", err, zap.String("journey", "LeaveGroup"))
 		response.JSON(w, errRest.Code, errRest)
 		return
 	}
-	response.JSON(w, http.StatusCreated, nil)
+
 	logger.Debug("Finish Leave controller", zap.String("journey", "LeaveGroup"))
+	response.JSON(w, http.StatusCreated, nil)
 }
 
-func (uc *groupControllerInterface) GetGroups(w http.ResponseWriter, r *http.Request) {
+func (ctrl *groupController) GetGroups(w http.ResponseWriter, r *http.Request) {
 	logger.Debug("Init GetGroups controller", zap.String("journey", "GetGroups"))
 
 	param := dto.GetGroupsParameter{
 		Name: r.URL.Query().Get("name"),
 	}
 
-	groupsDomain, errRest := uc.service.GetGroupsService(param)
+	groupsDomain, errRest := ctrl.service.GetGroupsService(param)
 	if errRest != nil {
 		logger.Error("Error trying GetGroupService", errRest, zap.String("journey", "GetGroups"))
 		response.JSON(w, errRest.Code, errRest)
 		return
 	}
 
-	var groups []resp.GroupResponse2
+	groups := make([]resp.GroupResponse, len(*groupsDomain))
 
-	for _, groupDomain := range *groupsDomain {
-		groups = append(groups, converter.ConvertGroupDtoToResponse(&groupDomain))
+	for i, groupDomain := range *groupsDomain {
+		groups[i] = converter.ConvertGroupDtoToResponse(&groupDomain)
 	}
 
 	logger.Debug("Finish GetGroups controller", zap.String("journey", "GetGroups"))

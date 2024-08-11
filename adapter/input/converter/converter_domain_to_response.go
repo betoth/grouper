@@ -17,20 +17,8 @@ func ConvertUserDomainToResponse(userDomain *domain.UserDomain) resp.UserRespons
 
 }
 
-func ConvertGroupDomainToResponse(groupDomain *domain.GroupDomain) resp.GroupResponse {
+func ConvertGroupDtoToResponse(groupDto *dto.GroupDTO) resp.GroupResponse {
 	return resp.GroupResponse{
-		ID:         groupDomain.ID,
-		Name:       groupDomain.Name,
-		UserID:     groupDomain.UserID,
-		TopicID:    groupDomain.TopicID,
-		SubtopicID: groupDomain.SubtopicID,
-		CreatedAt:  groupDomain.CreatedAt,
-	}
-
-}
-
-func ConvertGroupDtoToResponse(groupDto *dto.GroupDTO) resp.GroupResponse2 {
-	return resp.GroupResponse2{
 		ID:       groupDto.ID,
 		Name:     groupDto.Name,
 		UserName: groupDto.UserName,

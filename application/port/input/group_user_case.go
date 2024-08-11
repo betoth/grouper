@@ -7,7 +7,7 @@ import (
 )
 
 type GroupDomainService interface {
-	CreateGroupService(groupDomain domain.GroupDomain) (*domain.GroupDomain, *rest_errors.RestErr)
+	CreateGroupService(groupDomain domain.GroupDomain) (*dto.GroupDTO, *rest_errors.RestErr)
 	JoinService(userID, groupID string) *rest_errors.RestErr
 	LeaveService(userID, groupID string) *rest_errors.RestErr
 	GetGroupsService(parameter dto.GetGroupsParameter) (*[]dto.GroupDTO, *rest_errors.RestErr)

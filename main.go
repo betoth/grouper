@@ -37,12 +37,12 @@ func main() {
 	http.ListenAndServe(":8080", router)
 }
 
-func initDependencies(db *gorm.DB) (controller.UserControllerInterface, controller.GroupControllerInterface) {
+func initDependencies(db *gorm.DB) (controller.UserController, controller.GroupController) {
 	userRepo := repository.NewUserRepository(db)
 	userService := services.NewUserServices(userRepo)
 
 	groupRepo := repository.NewGroupRepository(db)
 	groupService := services.NewGroupServices(groupRepo)
 
-	return controller.NewUserControllerInterface(userService), controller.NewGroupControllerInterface(groupService)
+	return controller.NewUserController(userService), controller.NewGroupController(groupService)
 }
