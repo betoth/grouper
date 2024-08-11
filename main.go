@@ -32,7 +32,7 @@ func main() {
 	router := mux.NewRouter()
 	routes.InitRoutes(routesController, router)
 
-	logger.Debug("Init server", zap.String("journey", "Bootstrap"))
+	logger.Info("Init server", zap.String("journey", "Bootstrap"))
 	http.ListenAndServe(":8080", router)
 }
 
