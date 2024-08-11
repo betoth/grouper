@@ -4,7 +4,7 @@ import (
 	"time"
 )
 
-type GroupDTO struct {
+type Group struct {
 	ID        string
 	Name      string
 	UserName  string

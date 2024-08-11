@@ -1,13 +1,13 @@
 package converter
 
 import (
-	"grouper/adapter/input/model/request"
+	"grouper/adapter/input/model/requests"
 	"grouper/application/domain"
 	"time"
 )
 
-func ConvertUserRequestToDomain(userRequest *request.UserRequest) domain.UserDomain {
-	return domain.UserDomain{
+func ConvertUserRequestToDomain(userRequest *requests.User) domain.User {
+	return domain.User{
 		ID:        "",
 		Name:      userRequest.Name,
 		Email:     userRequest.Email,
@@ -17,8 +17,8 @@ func ConvertUserRequestToDomain(userRequest *request.UserRequest) domain.UserDom
 	}
 }
 
-func ConvertGroupRequestToDomain(groupRequest *request.GroupRequest) domain.GroupDomain {
-	return domain.GroupDomain{
+func ConvertGroupRequestToDomain(groupRequest *requests.Group) domain.Group {
+	return domain.Group{
 		ID:         "",
 		Name:       groupRequest.Name,
 		TopicID:    groupRequest.TopicID,
@@ -27,8 +27,8 @@ func ConvertGroupRequestToDomain(groupRequest *request.GroupRequest) domain.Grou
 	}
 }
 
-func ConvertLoginRequestToUserDomain(loginRequest *request.LoginRequest) domain.UserDomain {
-	return domain.UserDomain{
+func ConvertLoginRequestToUserDomain(loginRequest *requests.Login) domain.User {
+	return domain.User{
 		Email:    loginRequest.Email,
 		Password: loginRequest.Password,
 	}

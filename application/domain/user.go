@@ -2,7 +2,7 @@ package domain
 
 import "time"
 
-type UserDomain struct {
+type User struct {
 	ID        string
 	Name      string
 	Email     string

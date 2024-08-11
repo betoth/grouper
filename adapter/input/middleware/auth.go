@@ -3,7 +3,7 @@ package middleware
 import (
 	"fmt"
 	"grouper/adapter/input/response"
-	"grouper/application/util/secutiry"
+	"grouper/application/util/security"
 	"grouper/config/logger"
 	"grouper/config/rest_errors"
 	"net/http"
@@ -18,25 +18,26 @@ func Auth(next http.HandlerFunc) http.HandlerFunc {
 		token := getFormatedToken(r)
 
 		if token == "" {
-			err := rest_errors.NewBadRequestError("Missing token")
-			logger.Error("Error trying get token", err, zap.String("journey", "Auth"))
-			response.JSON(w, err.Code, err)
+			restErr := rest_errors.NewBadRequestError("Missing token")
+			logger.Error("Error trying get token", restErr, zap.String("journey", "Auth"))
+			response.JSON(w, restErr.Code, restErr)
 			return
 		}
 
-		auth := secutiry.NewJwtToken().ValidateToken(token)
+		auth := security.NewJwtToken().ValidateToken(token)
 		if !auth {
-			err := rest_errors.NewUnauthorizedError("Invalid token")
-			logger.Error("Error trying validate token", err, zap.String("journey", "Auth"))
-			response.JSON(w, err.Code, err)
+			restErr := rest_errors.NewUnauthorizedError("Invalid token")
+			logger.Error("Error trying validate token", restErr, zap.String("journey", "Auth"))
+			response.JSON(w, restErr.Code, restErr)
 			return
 		}
 		logger.Debug("Finish auth middleware", zap.String("journey", "Auth"))
+
 		next(w, r)
 	}
 }
 
-func LogRequest(next http.Handler) http.Handler {
+func RequestLogger(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		logRequest := fmt.Sprintf("%s %s", r.Method, r.RequestURI)
 		logger.Debug("Request", zap.String("request_info", logRequest))

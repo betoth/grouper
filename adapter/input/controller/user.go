@@ -3,11 +3,11 @@ package controller
 import (
 	"encoding/json"
 	"grouper/adapter/input/converter"
-	"grouper/adapter/input/model/request"
-	resp "grouper/adapter/input/model/response"
+	"grouper/adapter/input/model/requests"
+	"grouper/adapter/input/model/responses"
 	"grouper/adapter/input/response"
 	"grouper/application/port/input"
-	"grouper/application/util/secutiry"
+	"grouper/application/util/security"
 	"grouper/config/logger"
 	"grouper/config/rest_errors"
 	"grouper/config/validation"
@@ -17,7 +17,7 @@ import (
 	"go.uber.org/zap"
 )
 
-func NewUserController(serviceInterface input.UserDomainService) UserController {
+func NewUserController(serviceInterface input.UserService) UserController {
 	return &userController{
 		service: serviceInterface,
 	}
@@ -30,13 +30,13 @@ type UserController interface {
 }
 
 type userController struct {
-	service input.UserDomainService
+	service input.UserService
 }
 
 func (ctrl *userController) Create(w http.ResponseWriter, r *http.Request) {
 	logger.Debug("Init CreateUser controller", zap.String("journey", "CreateUser"))
 
-	var userRequest request.UserRequest
+	var userRequest requests.User
 
 	err := json.NewDecoder(r.Body).Decode(&userRequest)
 	if err != nil {
@@ -46,7 +46,7 @@ func (ctrl *userController) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	validationErr := validation.ValidateUserRequest(&userRequest)
+	validationErr := validation.ValidateRequest(&userRequest)
 	if validationErr != nil {
 		logger.Error("Validation failed", validationErr, zap.String("journey", "CreateUser"))
 		response.JSON(w, http.StatusBadRequest, validationErr)
@@ -69,7 +69,7 @@ func (ctrl *userController) Create(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	domainResult, restErr := ctrl.service.CreateUserServices(userDomain)
+	domainResult, restErr := ctrl.service.CreateUser(userDomain)
 	if restErr != nil {
 		logger.Error("Error trying to call CreateUser service", restErr, zap.String("journey", "CreateUser"))
 		response.JSON(w, restErr.Code, restErr)
@@ -84,7 +84,7 @@ func (ctrl *userController) Create(w http.ResponseWriter, r *http.Request) {
 func (ctrl *userController) Login(w http.ResponseWriter, r *http.Request) {
 	logger.Debug("Init Login controller", zap.String("journey", "Login"))
 
-	var LoginRequest request.LoginRequest
+	var LoginRequest requests.Login
 
 	err := json.NewDecoder(r.Body).Decode(&LoginRequest)
 	if err != nil {
@@ -94,23 +94,29 @@ func (ctrl *userController) Login(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
+	validationErr := validation.ValidateRequest(&LoginRequest)
+	if validationErr != nil {
+		logger.Error("Validation failed", validationErr, zap.String("journey", "Login"))
+		response.JSON(w, http.StatusBadRequest, validationErr)
+		return
+	}
 	userDomain := converter.ConvertLoginRequestToUserDomain(&LoginRequest)
 
-	domainResult, restErr := ctrl.service.LoginServices(userDomain)
+	domainResult, restErr := ctrl.service.Login(userDomain)
 	if restErr != nil {
 		logger.Error("Error trying to call Login service", restErr, zap.String("journey", "Login"))
 		response.JSON(w, restErr.Code, restErr)
 		return
 	}
 
-	token, restErr := secutiry.NewJwtToken().GenerateToken(domainResult.ID)
+	token, restErr := security.NewJwtToken().GenerateToken(domainResult.ID)
 	if restErr != nil {
 		restErr := rest_errors.NewInternalServerError("Error trying to generate token")
 		logger.Error("Error trying to generate token", restErr, zap.String("journey", "Login"))
 		response.JSON(w, restErr.Code, restErr)
 		return
 	}
-	tokenResp := resp.LoginResponse{Token: token}
+	tokenResp := responses.Login{Token: token}
 
 	logger.Debug("Finish Login controller", zap.String("journey", "login"))
 	response.JSON(w, http.StatusOK, tokenResp)
@@ -120,7 +126,7 @@ func (ctrl *userController) Login(w http.ResponseWriter, r *http.Request) {
 func checkUsernameAvailability(ctrl *userController, username string) *rest_errors.RestErr {
 	logger.Debug("Init check username availability controller", zap.String("journey", "checkUsernameAvailability"))
 
-	usersWithUsername, restErr := ctrl.service.FindUserByUsernameServices(username)
+	usersWithUsername, restErr := ctrl.service.FindUserByUsername(username)
 
 	if restErr != nil && restErr.Code != http.StatusNotFound {
 		logger.Error("Error validating username uniqueness", restErr, zap.String("username", username), zap.String("journey", "UserCheck"))
@@ -138,7 +144,7 @@ func checkUsernameAvailability(ctrl *userController, username string) *rest_erro
 func checkEmailAvailability(ctrl *userController, email string) *rest_errors.RestErr {
 	logger.Debug("Init check email availability controller", zap.String("journey", "checkEmailAvailability"))
 
-	usersWithEmail, restErr := ctrl.service.FindUserByEmailServices(email)
+	usersWithEmail, restErr := ctrl.service.FindUserByEmail(email)
 
 	if restErr != nil && restErr.Code != http.StatusNotFound {
 		logger.Error("Error validating email uniqueness", restErr, zap.String("email", email), zap.String("journey", "UserCheck"))
@@ -165,14 +171,14 @@ func (ctrl *userController) GetGroups(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	groupsDto, errRest := ctrl.service.GetUserGroupsService(userID)
+	groupsDto, errRest := ctrl.service.GetUserGroups(userID)
 	if errRest != nil {
 		logger.Error("Error trying GetGroupService", errRest, zap.String("journey", "GetUserGroups"))
 		response.JSON(w, errRest.Code, errRest)
 		return
 	}
 
-	var groups []resp.GroupResponse
+	var groups []responses.Group
 
 	for _, groupDomain := range *groupsDto {
 		groups = append(groups, converter.ConvertGroupDtoToResponse(&groupDomain))

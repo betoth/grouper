@@ -23,12 +23,12 @@ type userRepository struct {
 	db *gorm.DB
 }
 
-func (ur *userRepository) CreateUser(userDomain domain.UserDomain) (*domain.UserDomain, *rest_errors.RestErr) {
+func (repo *userRepository) CreateUser(userDomain domain.User) (*domain.User, *rest_errors.RestErr) {
 	logger.Debug("Init CreateUser repository", zap.String("journey", "createUser"))
 
 	userEntity := converter.ConvertUserDomainToEntity(&userDomain)
 
-	if err := ur.db.Create(&userEntity).Error; err != nil {
+	if err := repo.db.Create(&userEntity).Error; err != nil {
 		logger.Error("Error trying to create user in database", err, zap.String("journey", "createUser"))
 		return nil, rest_errors.NewInternalServerError("Internal server error")
 	}
@@ -40,11 +40,11 @@ func (ur *userRepository) CreateUser(userDomain domain.UserDomain) (*domain.User
 	return &userCreatedDomain, nil
 }
 
-func (ur *userRepository) FindUserByUsername(username string) (*[]domain.UserDomain, *rest_errors.RestErr) {
+func (repo *userRepository) FindUserByUsername(username string) (*[]domain.User, *rest_errors.RestErr) {
 	logger.Debug("Init FindUserByUsername repository", zap.String("journey", "FindUserByUsername"))
 
 	var entities []entity.User
-	if err := ur.db.Where("username = ?", username).Find(&entities).Error; err != nil {
+	if err := repo.db.Where("username = ?", username).Find(&entities).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			logger.Error("No user with this username", err, zap.String("journey", "FindUserByUsername"))
 			return nil, rest_errors.NewNotFoundError("User not Found")
@@ -59,7 +59,7 @@ func (ur *userRepository) FindUserByUsername(username string) (*[]domain.UserDom
 		return nil, err
 	}
 
-	var users []domain.UserDomain
+	var users []domain.User
 	for _, entity := range entities {
 		user := converter.ConverterUserEntityToDomain(&entity)
 		users = append(users, user)
@@ -69,11 +69,11 @@ func (ur *userRepository) FindUserByUsername(username string) (*[]domain.UserDom
 	return &users, nil
 }
 
-func (ur *userRepository) FindUserByEmail(email string) (*[]domain.UserDomain, *rest_errors.RestErr) {
+func (repo *userRepository) FindUserByEmail(email string) (*[]domain.User, *rest_errors.RestErr) {
 	logger.Debug("Init FindUserByEmail repository", zap.String("journey", "FindUserByEmail"))
 
 	var entities []entity.User
-	if err := ur.db.Where("email = ?", email).Find(&entities).Error; err != nil {
+	if err := repo.db.Where("email = ?", email).Find(&entities).Error; err != nil {
 		if err == gorm.ErrRecordNotFound {
 			logger.Error("No user with this email", err, zap.String("journey", "FindUserByEmail"))
 			return nil, rest_errors.NewNotFoundError("User not found")
@@ -88,7 +88,7 @@ func (ur *userRepository) FindUserByEmail(email string) (*[]domain.UserDomain, *
 		return nil, err
 	}
 
-	var users []domain.UserDomain
+	var users []domain.User
 	for _, entity := range entities {
 		user := converter.ConverterUserEntityToDomain(&entity)
 		users = append(users, user)
@@ -98,11 +98,11 @@ func (ur *userRepository) FindUserByEmail(email string) (*[]domain.UserDomain, *
 	return &users, nil
 }
 
-func (ur *userRepository) Login(userDomain domain.UserDomain) (*domain.UserDomain, *rest_errors.RestErr) {
+func (repo *userRepository) Login(userDomain domain.User) (*domain.User, *rest_errors.RestErr) {
 	logger.Debug("Init Login repository", zap.String("journey", "Login"))
 
 	var userEntity entity.User
-	err := ur.db.Where("email = ?", userDomain.Email).First(&userEntity).Error
+	err := repo.db.Where("email = ?", userDomain.Email).First(&userEntity).Error
 
 	if err != nil {
 		if err == gorm.ErrRecordNotFound {
@@ -119,12 +119,12 @@ func (ur *userRepository) Login(userDomain domain.UserDomain) (*domain.UserDomai
 	return &userDomain, nil
 }
 
-func (ur *userRepository) GetUserGroups(userId string) (*[]domain.GroupDomain, *rest_errors.RestErr) {
+func (repo *userRepository) GetUserGroups(userId string) (*[]domain.Group, *rest_errors.RestErr) {
 	logger.Debug("Init GetUserGroups repository", zap.String("journey", "GetUserGroups"))
 
-	var groups []domain.GroupDomain
+	var groups []domain.Group
 
-	if err := ur.db.Table("user_groups").
+	if err := repo.db.Table("user_groups").
 		Select("g.id, g.name, g.created_at").
 		Joins("INNER JOIN groups g ON user_groups.group_id = g.id").
 		Where("user_groups.user_id = ?", userId).

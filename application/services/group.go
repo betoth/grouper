@@ -11,26 +11,26 @@ import (
 	"go.uber.org/zap"
 )
 
-func NewGroupServices(groupRepository output.GroupPort) input.GroupDomainService {
-	return &groupDomainService{
+func NewGroupService(groupRepository output.GroupPort) input.GroupService {
+	return &groupService{
 		groupRepository,
 	}
 }
 
-type groupDomainService struct {
+type groupService struct {
 	repository output.GroupPort
 }
 
-func (gd *groupDomainService) CreateGroupService(groupDomain domain.GroupDomain) (*dto.GroupDTO, *rest_errors.RestErr) {
+func (service *groupService) CreateGroup(groupDomain domain.Group) (*dto.Group, *rest_errors.RestErr) {
 	logger.Debug("Init CreateGroup service", zap.String("journey", "CreateGroup"))
-	groupRepo, err := gd.repository.CreateGroup(groupDomain)
+	groupRepo, err := service.repository.CreateGroup(groupDomain)
 
 	if err != nil {
 		logger.Error("Error trying to call repository", err, zap.String("journey", "createUser"))
 		return nil, err
 	}
 
-	groupDto := dto.GroupDTO{
+	groupDto := dto.Group{
 		ID:       groupRepo.ID,
 		Name:     groupRepo.Name,
 		UserName: "UserNameDTO",
@@ -49,9 +49,9 @@ func (gd *groupDomainService) CreateGroupService(groupDomain domain.GroupDomain)
 	return &groupDto, nil
 }
 
-func (gd *groupDomainService) JoinService(userID, groupID string) *rest_errors.RestErr {
+func (service *groupService) JoinGroup(userID, groupID string) *rest_errors.RestErr {
 	logger.Debug("Init Join service", zap.String("journey", "JoinGroup"))
-	err := gd.repository.Join(userID, groupID)
+	err := service.repository.JoinGroup(userID, groupID)
 	if err != nil {
 		logger.Error("Error trying to call repository", err, zap.String("journey", "JoinGroup"))
 		return err
@@ -60,9 +60,9 @@ func (gd *groupDomainService) JoinService(userID, groupID string) *rest_errors.R
 	return nil
 }
 
-func (gd *groupDomainService) LeaveService(userID, groupID string) *rest_errors.RestErr {
+func (service *groupService) LeaveGroup(userID, groupID string) *rest_errors.RestErr {
 	logger.Debug("Init Leave service", zap.String("journey", "LeaveGroup"))
-	err := gd.repository.Leave(userID, groupID)
+	err := service.repository.LeaveGroup(userID, groupID)
 	if err != nil {
 		logger.Error("Error trying to call repository", err, zap.String("journey", "LeaveGroup"))
 		return err
@@ -71,13 +71,13 @@ func (gd *groupDomainService) LeaveService(userID, groupID string) *rest_errors.
 	return nil
 }
 
-func (gd *groupDomainService) GetGroupsService(parameter dto.GetGroupsParameter) (*[]dto.GroupDTO, *rest_errors.RestErr) {
+func (service *groupService) GetGroups(parameter dto.GetGroupsParameter) (*[]dto.Group, *rest_errors.RestErr) {
 	logger.Debug("Init GetGroups service", zap.String("journey", "GetGroups"))
 	queryParameter := dto.GetGroupsParameter{
 		Name: parameter.Name,
 	}
 
-	groupsRepo, err := gd.repository.GetGroups(queryParameter)
+	groupsRepo, err := service.repository.GetGroups(queryParameter)
 	if err != nil {
 		logger.Error("Error trying to call repository", err, zap.String("journey", "GetGroups"))
 		return nil, err
@@ -87,10 +87,10 @@ func (gd *groupDomainService) GetGroupsService(parameter dto.GetGroupsParameter)
 		return nil, err
 	}
 
-	var groupsDto []dto.GroupDTO
+	var groupsDto []dto.Group
 	for _, groupRepo := range *groupsRepo {
 
-		groupDto := dto.GroupDTO{
+		groupDto := dto.Group{
 			ID:       groupRepo.ID,
 			Name:     groupRepo.Name,
 			UserName: "UserNameDTO",

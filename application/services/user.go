@@ -5,7 +5,7 @@ import (
 	"grouper/application/dto"
 	"grouper/application/port/input"
 	"grouper/application/port/output"
-	util "grouper/application/util/secutiry"
+	"grouper/application/util/security"
 	"grouper/config/logger"
 	"grouper/config/rest_errors"
 	"net/http"
@@ -13,19 +13,19 @@ import (
 	"go.uber.org/zap"
 )
 
-func NewUserServices(userRepository output.UserPort) input.UserDomainService {
-	return &userDomainService{
+func NewUserService(userRepository output.UserPort) input.UserService {
+	return &userService{
 		userRepository,
 	}
 }
 
-type userDomainService struct {
+type userService struct {
 	repository output.UserPort
 }
 
-func (ud *userDomainService) CreateUserServices(userDomain domain.UserDomain) (*domain.UserDomain, *rest_errors.RestErr) {
+func (service *userService) CreateUser(userDomain domain.User) (*domain.User, *rest_errors.RestErr) {
 	logger.Debug("Init CreateUser service", zap.String("journey", "CreateUser"))
-	hashPassword, err := util.HashSHA256(userDomain.Password)
+	hashPassword, err := security.HashSHA256(userDomain.Password)
 	if err != nil {
 		logger.Error("Error trying to call repository", err, zap.String("journey", "createUser"))
 		return nil, rest_errors.NewInternalServerError("")
@@ -34,7 +34,7 @@ func (ud *userDomainService) CreateUserServices(userDomain domain.UserDomain) (*
 
 	userDomain.Password = hashPassword
 
-	userDomainRepository, restErr := ud.repository.CreateUser(userDomain)
+	userDomainRepository, restErr := service.repository.CreateUser(userDomain)
 	if restErr != nil {
 		logger.Error("Error trying to call repository", restErr, zap.String("journey", "createUser"))
 		return nil, restErr
@@ -44,24 +44,24 @@ func (ud *userDomainService) CreateUserServices(userDomain domain.UserDomain) (*
 	return userDomainRepository, nil
 }
 
-func (ud *userDomainService) FindUserByUsernameServices(username string) (*[]domain.UserDomain, *rest_errors.RestErr) {
+func (service *userService) FindUserByUsername(username string) (*[]domain.User, *rest_errors.RestErr) {
 	logger.Debug("Init FindUserByName service", zap.String("journey", "FindUserByName"))
-	usersDomainRepository, err := ud.repository.FindUserByUsername(username)
+	usersDomainRepository, err := service.repository.FindUserByUsername(username)
 	if err != nil {
 		logger.Error("Error trying to call repository", err, zap.String("journey", "FindUserByUsername"))
-		return &[]domain.UserDomain{}, err
+		return &[]domain.User{}, err
 	}
 
 	logger.Debug("Finish FindUserByName service", zap.String("journey", "FindUserByName"))
 	return usersDomainRepository, err
 }
 
-func (ud *userDomainService) FindUserByEmailServices(email string) (*[]domain.UserDomain, *rest_errors.RestErr) {
+func (service *userService) FindUserByEmail(email string) (*[]domain.User, *rest_errors.RestErr) {
 	logger.Debug("Init FindUserByEmail service", zap.String("journey", "FindUserByEmail"))
-	usersDomainRepository, err := ud.repository.FindUserByEmail(email)
+	usersDomainRepository, err := service.repository.FindUserByEmail(email)
 	if err != nil {
 		logger.Error("Error trying to call repository", err, zap.String("journey", "FindUserByEmail"))
-		return &[]domain.UserDomain{}, err
+		return &[]domain.User{}, err
 	}
 
 	logger.Debug("Finish FindUserByEmail service", zap.String("journey", "FindUserByEmail"))
@@ -69,9 +69,9 @@ func (ud *userDomainService) FindUserByEmailServices(email string) (*[]domain.Us
 	return usersDomainRepository, err
 }
 
-func (ud *userDomainService) LoginServices(userDomain domain.UserDomain) (*domain.UserDomain, *rest_errors.RestErr) {
+func (service *userService) Login(userDomain domain.User) (*domain.User, *rest_errors.RestErr) {
 	logger.Debug("Init LoginServices service", zap.String("journey", "Login"))
-	userRepository, err := ud.repository.Login(userDomain)
+	userRepository, err := service.repository.Login(userDomain)
 
 	if err != nil {
 		if err.Code == http.StatusUnauthorized || err.Code == http.StatusNotFound {
@@ -83,7 +83,7 @@ func (ud *userDomainService) LoginServices(userDomain domain.UserDomain) (*domai
 		return nil, rest_errors.NewInternalServerError("")
 	}
 
-	ok := util.VerifyPassword(userDomain.Password, userRepository.Password)
+	ok := security.VerifyPassword(userDomain.Password, userRepository.Password)
 	if ok != nil {
 		logger.Error("Error trying to call repository", err, zap.String("journey", "Login"))
 		return nil, rest_errors.NewUnauthorizedError("Invalid username or password")
@@ -93,19 +93,19 @@ func (ud *userDomainService) LoginServices(userDomain domain.UserDomain) (*domai
 	return userRepository, nil
 }
 
-func (ud *userDomainService) GetUserGroupsService(userID string) (*[]dto.GroupDTO, *rest_errors.RestErr) {
+func (service *userService) GetUserGroups(userID string) (*[]dto.Group, *rest_errors.RestErr) {
 	logger.Debug("Init GetUserGroups service", zap.String("journey", "GetUserGroups"))
 
-	groupsRepo, err := ud.repository.GetUserGroups(userID)
+	groupsRepo, err := service.repository.GetUserGroups(userID)
 	if err != nil {
 		logger.Error("Error trying to call repository", err, zap.String("journey", "GetUserGroups"))
 		return nil, err
 	}
 
-	var groupsDto []dto.GroupDTO
+	var groupsDto []dto.Group
 	for _, groupRepo := range *groupsRepo {
 
-		groupDto := dto.GroupDTO{
+		groupDto := dto.Group{
 			ID:       groupRepo.ID,
 			Name:     groupRepo.Name,
 			UserName: "UserNameDTO",

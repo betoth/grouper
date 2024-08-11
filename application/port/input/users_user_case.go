@@ -6,10 +6,10 @@ import (
 	"grouper/config/rest_errors"
 )
 
-type UserDomainService interface {
-	CreateUserServices(domain.UserDomain) (*domain.UserDomain, *rest_errors.RestErr)
-	FindUserByUsernameServices(username string) (*[]domain.UserDomain, *rest_errors.RestErr)
-	FindUserByEmailServices(email string) (*[]domain.UserDomain, *rest_errors.RestErr)
-	LoginServices(domain.UserDomain) (*domain.UserDomain, *rest_errors.RestErr)
-	GetUserGroupsService(userID string) (*[]dto.GroupDTO, *rest_errors.RestErr)
+type UserService interface {
+	CreateUser(domain.User) (*domain.User, *rest_errors.RestErr)
+	FindUserByUsername(username string) (*[]domain.User, *rest_errors.RestErr)
+	FindUserByEmail(email string) (*[]domain.User, *rest_errors.RestErr)
+	Login(domain.User) (*domain.User, *rest_errors.RestErr)
+	GetUserGroups(userID string) (*[]dto.Group, *rest_errors.RestErr)
 }

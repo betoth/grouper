@@ -2,7 +2,6 @@ package validation
 
 import (
 	"grouper/config/rest_errors"
-
 	"strings"
 
 	"github.com/go-playground/validator/v10"
@@ -10,7 +9,7 @@ import (
 
 var validate = validator.New()
 
-func ValidateUserRequest(data any) *rest_errors.RestErr {
+func ValidateRequest(data any) *rest_errors.RestErr {
 	err := validate.Struct(data)
 	if err != nil {
 		validationErrors := err.(validator.ValidationErrors)

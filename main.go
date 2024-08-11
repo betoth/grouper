@@ -5,7 +5,6 @@ import (
 	"grouper/adapter/input/routes"
 	"grouper/adapter/output/repository"
 	"grouper/application/services"
-
 	"grouper/config"
 	"grouper/config/database/postgres"
 	"grouper/config/logger"
@@ -39,10 +38,10 @@ func main() {
 
 func initDependencies(db *gorm.DB) (controller.UserController, controller.GroupController) {
 	userRepo := repository.NewUserRepository(db)
-	userService := services.NewUserServices(userRepo)
+	userService := services.NewUserService(userRepo)
 
 	groupRepo := repository.NewGroupRepository(db)
-	groupService := services.NewGroupServices(groupRepo)
+	groupService := services.NewGroupService(groupRepo)
 
 	return controller.NewUserController(userService), controller.NewGroupController(groupService)
 }

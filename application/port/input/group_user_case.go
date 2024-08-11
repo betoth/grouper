@@ -6,9 +6,9 @@ import (
 	"grouper/config/rest_errors"
 )
 
-type GroupDomainService interface {
-	CreateGroupService(groupDomain domain.GroupDomain) (*dto.GroupDTO, *rest_errors.RestErr)
-	JoinService(userID, groupID string) *rest_errors.RestErr
-	LeaveService(userID, groupID string) *rest_errors.RestErr
-	GetGroupsService(parameter dto.GetGroupsParameter) (*[]dto.GroupDTO, *rest_errors.RestErr)
+type GroupService interface {
+	CreateGroup(groupDomain domain.Group) (*dto.Group, *rest_errors.RestErr)
+	JoinGroup(userID, groupID string) *rest_errors.RestErr
+	LeaveGroup(userID, groupID string) *rest_errors.RestErr
+	GetGroups(parameter dto.GetGroupsParameter) (*[]dto.Group, *rest_errors.RestErr)
 }

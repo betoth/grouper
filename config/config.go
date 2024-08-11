@@ -15,6 +15,7 @@ type Config struct {
 	LOGLevel   string
 	APIPort    string
 	SECRET_KEY string
+	TimeZone   string
 }
 
 func NewConfig() *Config {
@@ -27,6 +28,7 @@ func NewConfig() *Config {
 		DBName:     env.GetEnv("DB_NAME"),
 		DBPassword: env.GetEnv("DB_PASSWORD"),
 		DBSSLMode:  env.GetEnv("DB_SSL_MODE"),
+		TimeZone:   env.GetEnv("DB_TIME_ZONE"),
 		LOGOutput:  env.GetEnv("LOG_OUTPUT"),
 		LOGLevel:   env.GetEnv("LOG_LEVEL"),
 		APIPort:    env.GetEnv("API_PORT"),

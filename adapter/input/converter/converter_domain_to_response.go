@@ -1,13 +1,13 @@
 package converter
 
 import (
-	resp "grouper/adapter/input/model/response"
+	"grouper/adapter/input/model/responses"
 	"grouper/application/domain"
 	"grouper/application/dto"
 )
 
-func ConvertUserDomainToResponse(userDomain *domain.UserDomain) resp.UserResponse {
-	return resp.UserResponse{
+func ConvertUserDomainToResponse(userDomain *domain.User) responses.User {
+	return responses.User{
 		ID:        userDomain.ID,
 		Name:      userDomain.Name,
 		Email:     userDomain.Email,
@@ -17,15 +17,15 @@ func ConvertUserDomainToResponse(userDomain *domain.UserDomain) resp.UserRespons
 
 }
 
-func ConvertGroupDtoToResponse(groupDto *dto.GroupDTO) resp.GroupResponse {
-	return resp.GroupResponse{
+func ConvertGroupDtoToResponse(groupDto *dto.Group) responses.Group {
+	return responses.Group{
 		ID:       groupDto.ID,
 		Name:     groupDto.Name,
 		UserName: groupDto.UserName,
-		Topic: resp.Topic{
+		Topic: responses.Topic{
 			ID:   groupDto.Topic.ID,
 			Name: groupDto.Topic.Name,
-			Subtopic: resp.Subtopic{
+			Subtopic: responses.Subtopic{
 				ID:   groupDto.Topic.Subtopic.ID,
 				Name: groupDto.Topic.Subtopic.Name,
 			},

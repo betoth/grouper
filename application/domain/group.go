@@ -2,7 +2,7 @@ package domain
 
 import "time"
 
-type GroupDomain struct {
+type Group struct {
 	ID         string
 	Name       string
 	UserID     string

@@ -6,9 +6,9 @@ import (
 )
 
 type UserPort interface {
-	CreateUser(userDomain domain.UserDomain) (*domain.UserDomain, *rest_errors.RestErr)
-	FindUserByUsername(username string) (*[]domain.UserDomain, *rest_errors.RestErr)
-	FindUserByEmail(email string) (*[]domain.UserDomain, *rest_errors.RestErr)
-	Login(userDomain domain.UserDomain) (*domain.UserDomain, *rest_errors.RestErr)
-	GetUserGroups(userID string) (*[]domain.GroupDomain, *rest_errors.RestErr)
+	CreateUser(userDomain domain.User) (*domain.User, *rest_errors.RestErr)
+	FindUserByUsername(username string) (*[]domain.User, *rest_errors.RestErr)
+	FindUserByEmail(email string) (*[]domain.User, *rest_errors.RestErr)
+	Login(userDomain domain.User) (*domain.User, *rest_errors.RestErr)
+	GetUserGroups(userID string) (*[]domain.Group, *rest_errors.RestErr)
 }

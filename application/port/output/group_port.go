@@ -7,8 +7,8 @@ import (
 )
 
 type GroupPort interface {
-	CreateGroup(groupDomain domain.GroupDomain) (*domain.GroupDomain, *rest_errors.RestErr)
-	Join(userID, groupID string) *rest_errors.RestErr
-	Leave(userID, groupID string) *rest_errors.RestErr
-	GetGroups(parameters dto.GetGroupsParameter) (*[]domain.GroupDomain, *rest_errors.RestErr)
+	CreateGroup(groupDomain domain.Group) (*domain.Group, *rest_errors.RestErr)
+	JoinGroup(userID, groupID string) *rest_errors.RestErr
+	LeaveGroup(userID, groupID string) *rest_errors.RestErr
+	GetGroups(parameters dto.GetGroupsParameter) (*[]domain.Group, *rest_errors.RestErr)
 }

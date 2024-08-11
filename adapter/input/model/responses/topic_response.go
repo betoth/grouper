@@ -1,4 +1,4 @@
-package resp
+package responses
 
 type Topic struct {
 	ID       string   `json:"id"`
