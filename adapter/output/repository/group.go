@@ -2,16 +2,18 @@ package repository
 
 import (
 	"database/sql"
+	"errors"
 	"fmt"
 	"grouper/adapter/output/converter"
 	"grouper/adapter/output/model/entity"
 	"grouper/application/domain"
 	"grouper/application/dto"
+	BnsErrors "grouper/application/errors"
+	appErrors "grouper/application/errors"
 	"grouper/application/port/output"
 	"grouper/config/logger"
 	"grouper/config/rest_errors"
 
-	"github.com/lib/pq"
 	"go.uber.org/zap"
 	"gorm.io/gorm"
 )
@@ -26,13 +28,7 @@ type groupRepository struct {
 	db *gorm.DB
 }
 
-// isForeignKeyViolation checks if the error is a foreign key violation
-func isForeignKeyViolation(err error) bool {
-	pgErr, ok := err.(*pq.Error)
-	return ok && pgErr.Code == "23503" // Foreign key violation error code
-}
-
-func (repo *groupRepository) CreateGroup(groupDomain domain.Group) (*domain.Group, *rest_errors.RestErr) {
+func (repo *groupRepository) CreateGroup(groupDomain domain.Group) (*domain.Group, error) {
 	logger.Debug("Init CreateGroup repository", zap.String("journey", "CreateGroup"))
 
 	groupEntity := converter.ConvertGroupDomainToEntity(&groupDomain)
@@ -40,7 +36,12 @@ func (repo *groupRepository) CreateGroup(groupDomain domain.Group) (*domain.Grou
 	result := repo.db.Create(&groupEntity)
 	if result.Error != nil {
 		logger.Error("Error trying to create group in database", result.Error, zap.String("journey", "CreateGroup"))
-		return nil, rest_errors.NewInternalServerError(result.Error.Error())
+
+		if errors.Is(result.Error, gorm.ErrDuplicatedKey) {
+			return nil, appErrors.ErrGroupAlreadyExists
+		}
+
+		return nil, appErrors.ErrInternalServerError
 	}
 
 	groupCreatedDomain := converter.ConverterGroupEntityToDomain(&groupEntity)
@@ -51,7 +52,7 @@ func (repo *groupRepository) CreateGroup(groupDomain domain.Group) (*domain.Grou
 	return &groupCreatedDomain, nil
 }
 
-func (repo *groupRepository) JoinGroup(userID, groupID string) *rest_errors.RestErr {
+func (repo *groupRepository) JoinGroup(userID, groupID string) error {
 	logger.Debug("Init JoinGroup repository", zap.String("journey", "JoinGroup"))
 
 	userGroup := entity.UserGroup{
@@ -61,13 +62,17 @@ func (repo *groupRepository) JoinGroup(userID, groupID string) *rest_errors.Rest
 	result := repo.db.Create(&userGroup)
 
 	if result.Error != nil {
-		if isForeignKeyViolation(result.Error) {
+		fmt.Println("Erro detectado: ", result.Error)
+		if appErrors.IsForeignKeyViolation(result.Error) {
+			fmt.Println("Erro de violação de chave estrangeira identificado")
 			logger.Error("Group ID does not exist", result.Error, zap.String("journey", "JoinGroup"))
-			return rest_errors.NewNotFoundError("Group not found")
+			return BnsErrors.ErrGroupNotFound // Retornar erro de grupo não encontrado
 		}
+		fmt.Println("Erro genérico detectado")
 		logger.Error("Error while trying to join group", result.Error, zap.String("journey", "JoinGroup"))
-		return rest_errors.NewInternalServerError("Failed to join group")
+		return appErrors.ErrInternalServerError // Um erro genérico para a camada superior tratar
 	}
+
 	logger.Debug("Finish JoinGroup repository", zap.String("journey", "JoinGroup"))
 	logger.Info("Successfully joined the group", zap.String("user_id", userID), zap.String("group_id", groupID), zap.String("journey", "JoinGroup"))
 
@@ -123,4 +128,27 @@ func (repo *groupRepository) GetGroups(parameters dto.GetGroupsParameter) (*[]do
 
 	logger.Debug("Finish GetGroups repository", zap.String("journey", "GetGroups"))
 	return &groupsDomain, nil
+}
+
+func (repo *groupRepository) FindByID(groupID string) (*domain.Group, error) {
+	logger.Debug("Init FindByID repository", zap.String("journey", "FindByID"))
+
+	var group entity.Group
+
+	result := repo.db.Where("id = ?", groupID).First(&group)
+	if result.Error != nil {
+
+		if result.Error == gorm.ErrRecordNotFound {
+			logger.Info("Group notfound", zap.String("journey", "FindByID"))
+			return nil, BnsErrors.ErrNotFound
+		}
+		logger.Error("Error while trying search group", result.Error, zap.String("journey", "FindByID"))
+		return nil, appErrors.ErrInternalServerError
+	}
+
+	groupDomain := converter.ConverterGroupEntityToDomain(&group)
+
+	logger.Debug("Finish FindByID repository", zap.String("journey", "FindByID"))
+	return &groupDomain, nil
+
 }

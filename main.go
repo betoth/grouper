@@ -27,8 +27,8 @@ func main() {
 		return
 	}
 
-	routesController := routes.Routes{}
-	routesController.UserController, routesController.GroupController = initDependencies(database)
+	routesController := initDependencies(database)
+
 	router := mux.NewRouter()
 	routes.InitRoutes(routesController, router)
 
@@ -36,12 +36,22 @@ func main() {
 	http.ListenAndServe(":8080", router)
 }
 
-func initDependencies(db *gorm.DB) (controller.UserController, controller.GroupController) {
+func initDependencies(db *gorm.DB) *routes.Routes {
 	userRepo := repository.NewUserRepository(db)
 	userService := services.NewUserService(userRepo)
 
 	groupRepo := repository.NewGroupRepository(db)
 	groupService := services.NewGroupService(groupRepo)
 
-	return controller.NewUserController(userService), controller.NewGroupController(groupService)
+	topicRepo := repository.NewTopicRepository(db)
+	topicService := services.NewTopicService(topicRepo)
+
+	routesController := routes.Routes{
+
+		UserController:  controller.NewUserController(userService),
+		GroupController: controller.NewGroupController(groupService),
+		TopicController: controller.NewTopicController(topicService),
+	}
+
+	return &routesController
 }

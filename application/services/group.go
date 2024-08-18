@@ -1,8 +1,10 @@
 package services
 
 import (
+	"fmt"
 	"grouper/application/domain"
 	"grouper/application/dto"
+	"grouper/application/errors"
 	"grouper/application/port/input"
 	"grouper/application/port/output"
 	"grouper/config/logger"
@@ -21,13 +23,12 @@ type groupService struct {
 	repository output.GroupPort
 }
 
-func (service *groupService) CreateGroup(groupDomain domain.Group) (*dto.Group, *rest_errors.RestErr) {
+func (service *groupService) CreateGroup(groupDomain domain.Group) (*dto.Group, error) {
 	logger.Debug("Init CreateGroup service", zap.String("journey", "CreateGroup"))
 	groupRepo, err := service.repository.CreateGroup(groupDomain)
 
 	if err != nil {
-		logger.Error("Error trying to call repository", err, zap.String("journey", "createUser"))
-		return nil, err
+		return nil, errors.HandleServiceError(err, "Group", "CreateGroup")
 	}
 
 	groupDto := dto.Group{
@@ -49,7 +50,7 @@ func (service *groupService) CreateGroup(groupDomain domain.Group) (*dto.Group, 
 	return &groupDto, nil
 }
 
-func (service *groupService) JoinGroup(userID, groupID string) *rest_errors.RestErr {
+func (service *groupService) JoinGroup(userID, groupID string) error {
 	logger.Debug("Init Join service", zap.String("journey", "JoinGroup"))
 	err := service.repository.JoinGroup(userID, groupID)
 	if err != nil {
@@ -110,4 +111,32 @@ func (service *groupService) GetGroups(parameter dto.GetGroupsParameter) (*[]dto
 
 	logger.Debug("Finish GetGroups service", zap.String("journey", "GetGroups"))
 	return &groupsDto, nil
+}
+
+func (service *groupService) FindByID(groupID string) (*dto.Group, error) {
+	logger.Debug("Init FindByID service", zap.String("journey", "FindByID"))
+
+	groupRepo, err := service.repository.FindByID(groupID)
+	if err != nil {
+		return nil, errors.HandleServiceError(err, "Group", "FindByID")
+	}
+
+	fmt.Println(err)
+
+	groupDto := dto.Group{
+		ID:       groupRepo.ID,
+		Name:     groupRepo.Name,
+		UserName: "UserNameDTO",
+		Topic: dto.GroupTopic{
+			ID:   "TopicDto ID",
+			Name: "TopicDto Name",
+			Subtopic: dto.GroupSubtopic{
+				ID:   "SubtopicDto ID",
+				Name: "SubtopicDTO Name",
+			},
+		},
+		CreatedAt: groupRepo.CreatedAt,
+	}
+
+	return &groupDto, nil
 }

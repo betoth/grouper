@@ -2,7 +2,9 @@ package controller
 
 import (
 	"encoding/json"
+	"fmt"
 	"grouper/adapter/input/converter"
+	"grouper/adapter/input/http_errors"
 	"grouper/adapter/input/model/requests"
 	"grouper/adapter/input/model/responses"
 	"grouper/adapter/input/response"
@@ -30,6 +32,7 @@ type GroupController interface {
 	GetGroups(w http.ResponseWriter, r *http.Request)
 	Join(w http.ResponseWriter, r *http.Request)
 	Leave(w http.ResponseWriter, r *http.Request)
+	FindByID(w http.ResponseWriter, r *http.Request)
 }
 
 type groupController struct {
@@ -40,38 +43,44 @@ func (ctrl *groupController) Create(w http.ResponseWriter, r *http.Request) {
 	logger.Debug("Init createGroup controller", zap.String("journey", "CreateGroup"))
 	var groupRequest requests.Group
 
+	// Extração do userID do token JWT
 	userID, restErr := security.NewJwtToken().ExtractUserID(r)
 	if restErr != nil {
 		logger.Error("Error trying to extract userID from token", restErr, zap.String("journey", "CreateGroup"))
-		response.JSON(w, restErr.Code, rest_errors.NewBadRequestError("Error trying to extrac from token"))
+		http_errors.MapAndRespond(w, restErr, "CreateGroup")
 		return
 	}
 
+	// Decodificação do corpo da requisição para a struct Group
 	err := json.NewDecoder(r.Body).Decode(&groupRequest)
 	if err != nil {
-		logger.Error("Error trying to validate group info", err, zap.String("journey", "CreateGroup"))
-		response.JSON(w, http.StatusBadRequest, rest_errors.NewBadRequestError("Error trying to validate user info"))
+		logger.Error("Error trying to decode group info", err, zap.String("journey", "CreateGroup"))
+		http_errors.MapAndRespond(w, err, "CreateGroup")
 		return
 	}
 
+	// Validação dos dados da requisição
 	validationErr := validation.ValidateRequest(&groupRequest)
 	if validationErr != nil {
 		logger.Error("Validation failed", validationErr, zap.String("journey", "CreateGroup"))
-		response.JSON(w, http.StatusBadRequest, validationErr)
+		http_errors.MapAndRespond(w, validationErr, "CreateGroup")
 		return
 	}
 
+	// Conversão da requisição para o domínio
 	groupDomain := converter.ConvertGroupRequestToDomain(&groupRequest)
 	groupDomain.UserID = userID
 
-	domainResult, restErr := ctrl.service.CreateGroup(groupDomain)
-	if restErr != nil {
-		logger.Error("Error trying to call CreateGroup service", restErr, zap.String("journey", "CreateGroup"))
-		response.JSON(w, restErr.Code, restErr)
+	// Chamada do serviço para criar o grupo
+	domainResult, appErr := ctrl.service.CreateGroup(groupDomain)
+	if appErr != nil {
+		logger.Error("Error trying to call CreateGroup service", appErr, zap.String("journey", "CreateGroup"))
+		http_errors.MapAndRespond(w, appErr, "CreateGroup")
 		return
 	}
 
-	logger.Debug("finish createGroup controller", zap.String("journey", "CreateGroup"))
+	// Resposta de sucesso
+	logger.Debug("Finish createGroup controller", zap.String("journey", "CreateGroup"))
 	groupResponse := converter.ConvertGroupDtoToResponse(domainResult)
 	response.JSON(w, http.StatusCreated, groupResponse)
 }
@@ -79,22 +88,26 @@ func (ctrl *groupController) Create(w http.ResponseWriter, r *http.Request) {
 func (ctrl *groupController) Join(w http.ResponseWriter, r *http.Request) {
 	logger.Debug("Init Join controller", zap.String("journey", "JoinGroup"))
 
+	// Extrair o parâmetro groupId da URL
 	parameter := mux.Vars(r)
 	groupID := parameter["groupId"]
 
+	// Extrair userID do token JWT
 	userID, err := security.NewJwtToken().ExtractUserID(r)
 	if err != nil {
 		logger.Error("Error trying to extract userID from token", err, zap.String("journey", "JoinGroup"))
-		response.JSON(w, http.StatusBadRequest, rest_errors.NewBadRequestError("Error trying to extrac from token"))
+		http_errors.MapAndRespond(w, err, "JoinGroup")
 		return
 	}
 
+	// Chamar o serviço para associar o usuário ao grupo
 	errRest := ctrl.service.JoinGroup(userID, groupID)
 	if errRest != nil {
-		logger.Error(errRest.Err, err, zap.String("journey", "JoinGroup"))
-		response.JSON(w, errRest.Code, errRest)
+		logger.Error("Error trying to call JoinGroup service", errRest, zap.String("journey", "JoinGroup"))
+		http_errors.MapAndRespond(w, errRest, "JoinGroup")
 		return
 	}
+
 	logger.Debug("Finish Join controller", zap.String("journey", "JoinGroup"))
 	response.JSON(w, http.StatusCreated, nil)
 }
@@ -151,4 +164,21 @@ func (ctrl *groupController) GetGroups(w http.ResponseWriter, r *http.Request) {
 
 	logger.Debug("Finish GetGroups controller", zap.String("journey", "GetGroups"))
 	response.JSON(w, http.StatusOK, groups)
+}
+
+func (ctrl *groupController) FindByID(w http.ResponseWriter, r *http.Request) {
+	logger.Debug("Init FindByID controller", zap.String("journey", "FindByID"))
+	parameter := mux.Vars(r)
+	groupID := parameter["groupId"]
+
+	domainResult, err := ctrl.service.FindByID(groupID)
+	fmt.Println("err>>>", err)
+	if err != nil {
+		logger.Error("Error trying to call FindByID service", err, zap.String("journey", "FindByID"))
+		http_errors.MapAndRespond(w, err, "FindByID")
+		return
+	}
+	groupResponse := converter.ConvertGroupDtoToResponse(domainResult)
+	logger.Debug("Finish FindByID controller", zap.String("journey", "FindByID"))
+	response.JSON(w, http.StatusOK, groupResponse)
 }

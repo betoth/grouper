@@ -7,3 +7,7 @@ type Topic struct {
 	Name      string    `gorm:"type:varchar(255);not null"`
 	CreatedAt time.Time `gorm:"type:timestamptz;not null;default:now()"`
 }
+
+func (Topic) TableName() string {
+	return "topic"
+}

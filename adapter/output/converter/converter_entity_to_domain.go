@@ -28,3 +28,12 @@ func ConverterGroupEntityToDomain(groupEntity *entity.Group) domain.Group {
 		CreatedAt:  groupEntity.CreatedAt,
 	}
 }
+
+func ConverterTopicEntityToDomain(topicEntity *entity.Topic) domain.Topic {
+
+	return domain.Topic{
+		ID:        topicEntity.ID,
+		Name:      topicEntity.Name,
+		CreatedAt: topicEntity.CreatedAt,
+	}
+}
