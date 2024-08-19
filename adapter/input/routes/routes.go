@@ -22,6 +22,7 @@ func InitRoutes(routes *Routes, r *mux.Router) {
 
 	ApiV1.HandleFunc("/users", routes.UserController.Create).Methods(http.MethodPost)
 	ApiV1.HandleFunc("/users/login", routes.UserController.Login).Methods(http.MethodPost)
+	ApiV1.HandleFunc("/users/{userId:"+util.UUIDPattern+"}", middleware.Auth(routes.UserController.FindByID)).Methods(http.MethodGet)
 	ApiV1.HandleFunc("/users/{userId:"+util.UUIDPattern+"}/groups", middleware.Auth(routes.UserController.GetGroups)).Methods(http.MethodGet)
 
 	ApiV1.HandleFunc("/groups", middleware.Auth(routes.GroupController.Create)).Methods(http.MethodPost)

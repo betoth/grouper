@@ -2,6 +2,7 @@ package controller
 
 import (
 	"encoding/json"
+	"fmt"
 	"grouper/adapter/input/converter"
 	"grouper/adapter/input/model/requests"
 	"grouper/adapter/input/model/responses"
@@ -27,6 +28,7 @@ type UserController interface {
 	Create(w http.ResponseWriter, r *http.Request)
 	Login(w http.ResponseWriter, r *http.Request)
 	GetGroups(w http.ResponseWriter, r *http.Request)
+	FindByID(w http.ResponseWriter, r *http.Request)
 }
 
 type userController struct {
@@ -186,4 +188,8 @@ func (ctrl *userController) GetGroups(w http.ResponseWriter, r *http.Request) {
 
 	logger.Debug("Finish GetUserGroups controller", zap.String("journey", "GetUserGroups"))
 	response.JSON(w, http.StatusOK, groups)
+}
+
+func (ctrl *userController) FindByID(w http.ResponseWriter, r *http.Request) {
+	fmt.Fprint(w, "foi")
 }

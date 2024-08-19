@@ -12,4 +12,5 @@ type UserService interface {
 	FindUserByEmail(email string) (*[]domain.User, *rest_errors.RestErr)
 	Login(domain.User) (*domain.User, *rest_errors.RestErr)
 	GetUserGroups(userID string) (*[]dto.Group, *rest_errors.RestErr)
+	FindByID(userID string) (*domain.User, *error)
 }

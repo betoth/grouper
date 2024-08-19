@@ -127,3 +127,8 @@ func (service *userService) GetUserGroups(userID string) (*[]dto.Group, *rest_er
 	logger.Debug("Finish GetUserGroups service", zap.String("journey", "GetUserGroups"))
 	return &groupsDto, nil
 }
+
+func (service *userService) FindByID(userID string) (*domain.User, *error) {
+
+	return nil, nil
+}

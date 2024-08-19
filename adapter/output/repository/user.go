@@ -4,6 +4,7 @@ import (
 	"grouper/adapter/output/converter"
 	"grouper/adapter/output/model/entity"
 	"grouper/application/domain"
+	appErrors "grouper/application/errors"
 	"grouper/application/port/output"
 	"grouper/config/logger"
 	"grouper/config/rest_errors"
@@ -139,4 +140,17 @@ func (repo *userRepository) GetUserGroups(userId string) (*[]domain.Group, *rest
 
 	logger.Debug("Finish GetUserGroups repository", zap.String("journey", "GetUserGroups"))
 	return &groups, nil
+}
+
+func (repo *userRepository) FindByID(userID string) (*domain.User, error) {
+
+	var userEntity entity.User
+	result := repo.db.Where("id = ?", userID).First(&userEntity)
+
+	if result.Error != nil {
+		return nil, appErrors.ErrInternalServerError
+	}
+	userDomain := converter.ConverterUserEntityToDomain(&userEntity)
+
+	return &userDomain, nil
 }

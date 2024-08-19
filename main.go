@@ -40,11 +40,16 @@ func initDependencies(db *gorm.DB) *routes.Routes {
 	userRepo := repository.NewUserRepository(db)
 	userService := services.NewUserService(userRepo)
 
-	groupRepo := repository.NewGroupRepository(db)
-	groupService := services.NewGroupService(groupRepo)
-
 	topicRepo := repository.NewTopicRepository(db)
 	topicService := services.NewTopicService(topicRepo)
+
+	groupRepo := repository.NewGroupRepository(db)
+	repos := services.GroupService{
+		RepoGroup: groupRepo,
+		RepoTopic: topicRepo,
+		RepoUser:  userRepo,
+	}
+	groupService := services.NewGroupService(repos)
 
 	routesController := routes.Routes{
 
