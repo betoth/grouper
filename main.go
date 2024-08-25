@@ -43,19 +43,23 @@ func initDependencies(db *gorm.DB) *routes.Routes {
 	topicRepo := repository.NewTopicRepository(db)
 	topicService := services.NewTopicService(topicRepo)
 
+	subtopicRepo := repository.NewSubtopicRepository(db)
+	subtopicService := services.NewSubtopicService(subtopicRepo)
+
 	groupRepo := repository.NewGroupRepository(db)
 	repos := services.GroupService{
-		RepoGroup: groupRepo,
-		RepoTopic: topicRepo,
-		RepoUser:  userRepo,
+		RepoGroup:    groupRepo,
+		RepoTopic:    topicRepo,
+		RepoUser:     userRepo,
+		RepoSubtopic: subtopicRepo,
 	}
 	groupService := services.NewGroupService(repos)
 
 	routesController := routes.Routes{
-
-		UserController:  controller.NewUserController(userService),
-		GroupController: controller.NewGroupController(groupService),
-		TopicController: controller.NewTopicController(topicService),
+		UserController:     controller.NewUserController(userService),
+		GroupController:    controller.NewGroupController(groupService),
+		TopicController:    controller.NewTopicController(topicService),
+		SubtopicController: controller.NewSubtopicController(subtopicService),
 	}
 
 	return &routesController

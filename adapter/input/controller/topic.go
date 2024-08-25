@@ -1,9 +1,8 @@
 package controller
 
 import (
-	"fmt"
 	"grouper/adapter/input/converter"
-	"grouper/adapter/input/http_errors"
+	"grouper/adapter/input/httperror"
 	"grouper/adapter/input/response"
 	"grouper/application/port/input"
 	"grouper/config/logger"
@@ -34,10 +33,10 @@ func (ctrl *topicController) FindByID(w http.ResponseWriter, r *http.Request) {
 	groupID := parameter["topicId"]
 
 	domainResult, err := ctrl.service.FindByID(groupID)
-	fmt.Println("err>>>", err)
+
 	if err != nil {
 		logger.Error("Error trying to call FindByID service", err, zap.String("journey", "FindByID"))
-		http_errors.MapAndRespond(w, err, "FindByID")
+		httperror.MapAndRespond(w, err, "FindByID")
 		return
 	}
 	groupResponse := converter.ConvertTopicDomainToResponse(domainResult)

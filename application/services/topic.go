@@ -1,7 +1,6 @@
 package services
 
 import (
-	"fmt"
 	"grouper/application/domain"
 	"grouper/application/errors"
 	"grouper/application/port/input"
@@ -29,6 +28,5 @@ func (service *topicService) FindByID(topicID string) (*domain.Topic, error) {
 		return nil, errors.HandleServiceError(err, "Group", "FindByID")
 	}
 
-	fmt.Println(err)
 	return topicRepo, nil
 }

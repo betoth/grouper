@@ -10,9 +10,10 @@ import (
 )
 
 type Routes struct {
-	UserController  controller.UserController
-	GroupController controller.GroupController
-	TopicController controller.TopicController
+	UserController     controller.UserController
+	GroupController    controller.GroupController
+	TopicController    controller.TopicController
+	SubtopicController controller.SubtopicController
 }
 
 func InitRoutes(routes *Routes, r *mux.Router) {
@@ -30,7 +31,9 @@ func InitRoutes(routes *Routes, r *mux.Router) {
 	ApiV1.HandleFunc("/groups/{groupId:"+util.UUIDPattern+"}/leave", middleware.Auth(routes.GroupController.Leave)).Methods(http.MethodPost)
 	ApiV1.HandleFunc("/groups/{groupId:"+util.UUIDPattern+"}", middleware.Auth(routes.GroupController.FindByID)).Methods(http.MethodGet)
 	ApiV1.HandleFunc("/groups", middleware.Auth(routes.GroupController.GetGroups)).Methods(http.MethodGet)
+
 	ApiV1.HandleFunc("/topics/{topicId:"+util.UUIDPattern+"}", middleware.Auth(routes.TopicController.FindByID)).Methods(http.MethodGet)
-	ApiV1.HandleFunc("/topics/{topicId:"+util.UUIDPattern+"}/subtopics/{subtopicId:"+util.UUIDPattern+"}", middleware.Auth(routes.TopicController.FindByID)).Methods(http.MethodGet)
+
+	ApiV1.HandleFunc("/subtopics/{subtopicId:"+util.UUIDPattern+"}", middleware.Auth(routes.SubtopicController.FindByID)).Methods(http.MethodGet)
 
 }

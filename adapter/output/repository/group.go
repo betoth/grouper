@@ -1,18 +1,15 @@
 package repository
 
 import (
-	"database/sql"
 	"errors"
 	"fmt"
 	"grouper/adapter/output/converter"
 	"grouper/adapter/output/model/entity"
+	customerror "grouper/application/custom/custom-error"
 	"grouper/application/domain"
 	"grouper/application/dto"
-	BnsErrors "grouper/application/errors"
-	appErrors "grouper/application/errors"
 	"grouper/application/port/output"
 	"grouper/config/logger"
-	"grouper/config/rest_errors"
 
 	"go.uber.org/zap"
 	"gorm.io/gorm"
@@ -38,10 +35,10 @@ func (repo *groupRepository) CreateGroup(groupDomain domain.Group) (*domain.Grou
 		logger.Error("Error trying to create group in database", result.Error, zap.String("journey", "CreateGroup"))
 
 		if errors.Is(result.Error, gorm.ErrDuplicatedKey) {
-			return nil, appErrors.ErrGroupAlreadyExists
+			return nil, customerror.NewBusinessError(customerror.BUSSINES_ERROR_USER_NOT_IN_GROUP)
 		}
 
-		return nil, appErrors.ErrInternalServerError
+		return nil, result.Error
 	}
 
 	groupCreatedDomain := converter.ConverterGroupEntityToDomain(&groupEntity)
@@ -62,15 +59,13 @@ func (repo *groupRepository) JoinGroup(userID, groupID string) error {
 	result := repo.db.Create(&userGroup)
 
 	if result.Error != nil {
-		fmt.Println("Erro detectado: ", result.Error)
-		if appErrors.IsForeignKeyViolation(result.Error) {
-			fmt.Println("Erro de violação de chave estrangeira identificado")
+		if errors.Is(result.Error, gorm.ErrForeignKeyViolated) {
 			logger.Error("Group ID does not exist", result.Error, zap.String("journey", "JoinGroup"))
-			return BnsErrors.ErrGroupNotFound // Retornar erro de grupo não encontrado
+			return customerror.NewBusinessError(customerror.BUSSINES_ERROR_GROUP_NOT_FOUND)
 		}
-		fmt.Println("Erro genérico detectado")
+
 		logger.Error("Error while trying to join group", result.Error, zap.String("journey", "JoinGroup"))
-		return appErrors.ErrInternalServerError // Um erro genérico para a camada superior tratar
+		return result.Error
 	}
 
 	logger.Debug("Finish JoinGroup repository", zap.String("journey", "JoinGroup"))
@@ -79,26 +74,29 @@ func (repo *groupRepository) JoinGroup(userID, groupID string) error {
 	return nil
 }
 
-func (repo *groupRepository) LeaveGroup(userID, groupID string) *rest_errors.RestErr {
+func (repo *groupRepository) LeaveGroup(userID, groupID string) error {
 	logger.Debug("Init LeaveGroup repository", zap.String("journey", "LeaveGroup"))
 
 	var userGroup entity.UserGroup
 
-	result := repo.db.Where("user_id = ? AND group_id = ?", userID, groupID).Delete(&userGroup)
-	if result.Error != nil {
-		if result.Error == sql.ErrNoRows {
-			logger.Error("User is not a member of this group", result.Error, zap.String("journey", "LeaveGroup"))
-			return rest_errors.NewNotFoundError("User is not a member of this group")
-		}
-		logger.Error("Error while trying to leave group", result.Error, zap.String("journey", "LeaveGroup"))
-		return rest_errors.NewInternalServerError("Internal server error")
+	result := repo.db.Where("user_id2 = ? AND group_id = ?", userID, groupID).Delete(&userGroup)
+
+	if result.RowsAffected == 0 {
+		logger.Info("No record found to delete", zap.String("user_id", userID), zap.String("group_id", groupID), zap.String("journey", "LeaveGroup"))
+		return customerror.NewBusinessError(customerror.BUSSINES_ERROR_GROUP_NOT_FOUND)
 	}
+
+	if result.Error != nil {
+		logger.Error("Error while trying to leave group", result.Error, zap.String("journey", "LeaveGroup"))
+		return result.Error
+	}
+
 	logger.Debug("Finish LeaveGroup repository", zap.String("journey", "LeaveGroup"))
 	logger.Info("Successfully left the group", zap.String("user_id", userID), zap.String("group_id", groupID), zap.String("journey", "LeaveGroup"))
 	return nil
 }
 
-func (repo *groupRepository) GetGroups(parameters dto.GetGroupsParameter) (*[]domain.Group, *rest_errors.RestErr) {
+func (repo *groupRepository) GetGroups(parameters dto.GetGroupsParameter) (*[]domain.Group, error) {
 	logger.Debug("Init GetGroups repository", zap.String("journey", "GetGroups"))
 
 	var groupsEntity []entity.Group
@@ -111,13 +109,12 @@ func (repo *groupRepository) GetGroups(parameters dto.GetGroupsParameter) (*[]do
 	err := dbQuery.Find(&groupsEntity).Error
 	if err != nil {
 		logger.Error("Error while get groups", err, zap.String("journey", "GetGroups"))
-		return nil, rest_errors.NewInternalServerError("Internal server error")
+		return nil, err
 	}
 
 	if len(groupsEntity) == 0 {
-		err := rest_errors.NewNotFoundError("No group meets the search criteria")
-		logger.Error(err.Message, nil, zap.String("journey", "GetGroups"))
-		return nil, err
+		logger.Error("No group meets the search criteria", nil, zap.String("journey", "GetGroups"))
+		return nil, customerror.NewBusinessError(customerror.BUSSINES_ERROR_GROUP_NOT_FOUND)
 	}
 
 	var groupsDomain []domain.Group
@@ -140,10 +137,10 @@ func (repo *groupRepository) FindByID(groupID string) (*domain.Group, error) {
 
 		if result.Error == gorm.ErrRecordNotFound {
 			logger.Info("Group notfound", zap.String("journey", "FindByID"))
-			return nil, BnsErrors.ErrNotFound
+			return nil, customerror.NewBusinessError(customerror.BUSSINES_ERROR_GROUP_NOT_FOUND)
 		}
 		logger.Error("Error while trying search group", result.Error, zap.String("journey", "FindByID"))
-		return nil, appErrors.ErrInternalServerError
+		return nil, result.Error
 	}
 
 	groupDomain := converter.ConverterGroupEntityToDomain(&group)

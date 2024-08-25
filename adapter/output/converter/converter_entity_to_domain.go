@@ -37,3 +37,13 @@ func ConverterTopicEntityToDomain(topicEntity *entity.Topic) domain.Topic {
 		CreatedAt: topicEntity.CreatedAt,
 	}
 }
+
+func ConverterSubtopicEntityToDomain(subtopicEntity *entity.Subtopic) domain.Subtopic {
+
+	return domain.Subtopic{
+		ID:        subtopicEntity.ID,
+		Name:      subtopicEntity.Name,
+		TopicID:   subtopicEntity.TopicID,
+		CreatedAt: subtopicEntity.CreatedAt,
+	}
+}

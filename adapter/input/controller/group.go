@@ -2,9 +2,8 @@ package controller
 
 import (
 	"encoding/json"
-	"fmt"
 	"grouper/adapter/input/converter"
-	"grouper/adapter/input/http_errors"
+	"grouper/adapter/input/httperror"
 	"grouper/adapter/input/model/requests"
 	"grouper/adapter/input/model/responses"
 	"grouper/adapter/input/response"
@@ -47,7 +46,7 @@ func (ctrl *groupController) Create(w http.ResponseWriter, r *http.Request) {
 	userID, restErr := security.NewJwtToken().ExtractUserID(r)
 	if restErr != nil {
 		logger.Error("Error trying to extract userID from token", restErr, zap.String("journey", "CreateGroup"))
-		http_errors.MapAndRespond(w, restErr, "CreateGroup")
+		httperror.MapAndRespond(w, restErr, "CreateGroup")
 		return
 	}
 
@@ -55,7 +54,7 @@ func (ctrl *groupController) Create(w http.ResponseWriter, r *http.Request) {
 	err := json.NewDecoder(r.Body).Decode(&groupRequest)
 	if err != nil {
 		logger.Error("Error trying to decode group info", err, zap.String("journey", "CreateGroup"))
-		http_errors.MapAndRespond(w, err, "CreateGroup")
+		httperror.MapAndRespond(w, err, "CreateGroup")
 		return
 	}
 
@@ -63,7 +62,7 @@ func (ctrl *groupController) Create(w http.ResponseWriter, r *http.Request) {
 	validationErr := validation.ValidateRequest(&groupRequest)
 	if validationErr != nil {
 		logger.Error("Validation failed", validationErr, zap.String("journey", "CreateGroup"))
-		http_errors.MapAndRespond(w, validationErr, "CreateGroup")
+		httperror.MapAndRespond(w, validationErr, "CreateGroup")
 		return
 	}
 
@@ -75,7 +74,7 @@ func (ctrl *groupController) Create(w http.ResponseWriter, r *http.Request) {
 	domainResult, appErr := ctrl.service.CreateGroup(groupDomain)
 	if appErr != nil {
 		logger.Error("Error trying to call CreateGroup service", appErr, zap.String("journey", "CreateGroup"))
-		http_errors.MapAndRespond(w, appErr, "CreateGroup")
+		httperror.ErrorToErrorResponse(w, appErr, "CreateGroup")
 		return
 	}
 
@@ -96,7 +95,7 @@ func (ctrl *groupController) Join(w http.ResponseWriter, r *http.Request) {
 	userID, err := security.NewJwtToken().ExtractUserID(r)
 	if err != nil {
 		logger.Error("Error trying to extract userID from token", err, zap.String("journey", "JoinGroup"))
-		http_errors.MapAndRespond(w, err, "JoinGroup")
+		httperror.MapAndRespond(w, err, "JoinGroup")
 		return
 	}
 
@@ -104,7 +103,7 @@ func (ctrl *groupController) Join(w http.ResponseWriter, r *http.Request) {
 	errRest := ctrl.service.JoinGroup(userID, groupID)
 	if errRest != nil {
 		logger.Error("Error trying to call JoinGroup service", errRest, zap.String("journey", "JoinGroup"))
-		http_errors.MapAndRespond(w, errRest, "JoinGroup")
+		httperror.ErrorToErrorResponse(w, errRest, "JoinGroup")
 		return
 	}
 
@@ -124,17 +123,17 @@ func (ctrl *groupController) Leave(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	userID, err := security.NewJwtToken().ExtractUserID(r)
-	if err != nil {
-		logger.Error("Error trying to extract userID from token", err, zap.String("journey", "LeaveGroup"))
+	userID, restErr := security.NewJwtToken().ExtractUserID(r)
+	if restErr != nil {
+		logger.Error("Error trying to extract userID from token", restErr, zap.String("journey", "LeaveGroup"))
 		response.JSON(w, http.StatusBadRequest, rest_errors.NewBadRequestError("Error trying to extrac from token"))
 		return
 	}
 
-	errRest := ctrl.service.LeaveGroup(userID, groupID)
-	if errRest != nil {
+	err := ctrl.service.LeaveGroup(userID, groupID)
+	if err != nil {
 		logger.Error("Error trying LeaveService", err, zap.String("journey", "LeaveGroup"))
-		response.JSON(w, errRest.Code, errRest)
+		httperror.ErrorToErrorResponse(w, err, "LeaveGroup")
 		return
 	}
 
@@ -149,10 +148,10 @@ func (ctrl *groupController) GetGroups(w http.ResponseWriter, r *http.Request) {
 		Name: r.URL.Query().Get("name"),
 	}
 
-	groupsDomain, errRest := ctrl.service.GetGroups(param)
-	if errRest != nil {
-		logger.Error("Error trying GetGroupService", errRest, zap.String("journey", "GetGroups"))
-		response.JSON(w, errRest.Code, errRest)
+	groupsDomain, err := ctrl.service.GetGroups(param)
+	if err != nil {
+		logger.Error("Error trying GetGroupService", err, zap.String("journey", "GetGroups"))
+		httperror.ErrorToErrorResponse(w, err, "LeaveGroup")
 		return
 	}
 
@@ -172,10 +171,9 @@ func (ctrl *groupController) FindByID(w http.ResponseWriter, r *http.Request) {
 	groupID := parameter["groupId"]
 
 	domainResult, err := ctrl.service.FindByID(groupID)
-	fmt.Println("err>>>", err)
 	if err != nil {
 		logger.Error("Error trying to call FindByID service", err, zap.String("journey", "FindByID"))
-		http_errors.MapAndRespond(w, err, "FindByID")
+		httperror.MapAndRespond(w, err, "FindByID")
 		return
 	}
 	groupResponse := converter.ConvertGroupDtoToResponse(domainResult)

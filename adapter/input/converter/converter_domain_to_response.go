@@ -42,3 +42,14 @@ func ConvertTopicDomainToResponse(topicDomain *domain.Topic) responses.Topic {
 	}
 
 }
+
+func ConvertSubtopicDomainToResponse(subtopicDomain *domain.Subtopic) responses.Subtopic {
+	return responses.Subtopic{
+		ID:   subtopicDomain.ID,
+		Name: subtopicDomain.Name,
+		Topic: responses.Topic{
+			ID:   subtopicDomain.TopicID,
+			Name: "",
+		},
+	}
+}

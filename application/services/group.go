@@ -1,14 +1,11 @@
 package services
 
 import (
-	"fmt"
 	"grouper/application/domain"
 	"grouper/application/dto"
-	"grouper/application/errors"
 	"grouper/application/port/input"
 	"grouper/application/port/output"
 	"grouper/config/logger"
-	"grouper/config/rest_errors"
 
 	"go.uber.org/zap"
 )
@@ -18,13 +15,15 @@ func NewGroupService(repos GroupService) input.GroupService {
 		repos.RepoGroup,
 		repos.RepoTopic,
 		repos.RepoUser,
+		repos.RepoSubtopic,
 	}
 }
 
 type GroupService struct {
-	RepoGroup output.GroupPort
-	RepoTopic output.TopicPort
-	RepoUser  output.UserPort
+	RepoGroup    output.GroupPort
+	RepoTopic    output.TopicPort
+	RepoUser     output.UserPort
+	RepoSubtopic output.SubtopicPort
 }
 
 func (service *GroupService) CreateGroup(groupDomain domain.Group) (*dto.Group, error) {
@@ -32,7 +31,7 @@ func (service *GroupService) CreateGroup(groupDomain domain.Group) (*dto.Group, 
 	groupRepo, err := service.RepoGroup.CreateGroup(groupDomain)
 
 	if err != nil {
-		return nil, errors.HandleServiceError(err, "Group", "CreateGroup")
+		return nil, err
 	}
 
 	groupDto := dto.Group{
@@ -65,7 +64,7 @@ func (service *GroupService) JoinGroup(userID, groupID string) error {
 	return nil
 }
 
-func (service *GroupService) LeaveGroup(userID, groupID string) *rest_errors.RestErr {
+func (service *GroupService) LeaveGroup(userID, groupID string) error {
 	logger.Debug("Init Leave service", zap.String("journey", "LeaveGroup"))
 	err := service.RepoGroup.LeaveGroup(userID, groupID)
 	if err != nil {
@@ -76,7 +75,7 @@ func (service *GroupService) LeaveGroup(userID, groupID string) *rest_errors.Res
 	return nil
 }
 
-func (service *GroupService) GetGroups(parameter dto.GetGroupsParameter) (*[]dto.Group, *rest_errors.RestErr) {
+func (service *GroupService) GetGroups(parameter dto.GetGroupsParameter) (*[]dto.Group, error) {
 	logger.Debug("Init GetGroups service", zap.String("journey", "GetGroups"))
 	queryParameter := dto.GetGroupsParameter{
 		Name: parameter.Name,
@@ -122,16 +121,23 @@ func (service *GroupService) FindByID(groupID string) (*dto.Group, error) {
 
 	groupRepo, err := service.RepoGroup.FindByID(groupID)
 	if err != nil {
-		return nil, errors.HandleServiceError(err, "Group", "FindByID")
+		return nil, err
 	}
 
 	topicRepo, err := service.RepoTopic.FindByID(groupRepo.TopicID)
 	if err != nil {
-		return nil, errors.HandleServiceError(err, "Group", "FindByID")
+		return nil, err
 	}
 
 	userRepo, err := service.RepoUser.FindByID(groupRepo.UserID)
-	fmt.Println(err)
+	if err != nil {
+		return nil, err
+	}
+
+	subtopicRepo, err := service.RepoSubtopic.FindByID(groupRepo.SubtopicID)
+	if err != nil {
+		return nil, err
+	}
 
 	groupDto := dto.Group{
 		ID:       groupRepo.ID,
@@ -141,8 +147,8 @@ func (service *GroupService) FindByID(groupID string) (*dto.Group, error) {
 			ID:   topicRepo.ID,
 			Name: topicRepo.Name,
 			Subtopic: dto.GroupSubtopic{
-				ID:   "SubtopicDto ID",
-				Name: "SubtopicDTO Name",
+				ID:   subtopicRepo.ID,
+				Name: subtopicRepo.Name,
 			},
 		},
 		CreatedAt: groupRepo.CreatedAt,
