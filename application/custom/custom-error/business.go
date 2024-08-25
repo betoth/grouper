@@ -38,6 +38,13 @@ var (
 	}
 )
 
+var (
+	BUSSINES_ERROR_TOPIC_NOT_FOUND BusinessErrorDetais = BusinessErrorDetais{
+		BusinessErrorCode:        "404",
+		BusinessErrorDescription: "Topic not found",
+	}
+)
+
 func NewBusinessError(details BusinessErrorDetais) CustomError {
 	return &BussinesError{
 		Detais: details,

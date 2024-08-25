@@ -28,18 +28,18 @@ type topicController struct {
 }
 
 func (ctrl *topicController) FindByID(w http.ResponseWriter, r *http.Request) {
-	logger.Debug("Init FindByID controller", zap.String("journey", "FindByID"))
+	logger.Debug("Init FindByID in topicController", zap.String("journey", "FindTopicByID"))
 	parameter := mux.Vars(r)
 	groupID := parameter["topicId"]
 
 	domainResult, err := ctrl.service.FindByID(groupID)
 
 	if err != nil {
-		logger.Error("Error trying to call FindByID service", err, zap.String("journey", "FindByID"))
-		httperror.MapAndRespond(w, err, "FindByID")
+		httperror.ErrorToErrorResponse(w, err, "FindByID")
 		return
 	}
 	groupResponse := converter.ConvertTopicDomainToResponse(domainResult)
-	logger.Debug("Finish FindByID controller", zap.String("journey", "FindByID"))
+
+	logger.Debug("FinishFindByID in topicController", zap.String("journey", "FindTopicByID"))
 	response.JSON(w, http.StatusOK, groupResponse)
 }

@@ -29,7 +29,6 @@ func (repo *subtopicRepository) FindByID(subtopicID string) (*domain.Subtopic, e
 
 	result := repo.db.Where("id = ?", subtopicID).First(&subtopic)
 	if result.Error != nil {
-
 		if result.Error == gorm.ErrRecordNotFound {
 			logger.Info("Subtopic notfound", zap.String("journey", "FindSubtopicByID"))
 			return nil, customerror.NewBusinessError(customerror.BUSSINES_ERROR_SUBTOPIC_NOT_FOUND)

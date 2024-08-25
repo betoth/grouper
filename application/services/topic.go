@@ -2,7 +2,6 @@ package services
 
 import (
 	"grouper/application/domain"
-	"grouper/application/errors"
 	"grouper/application/port/input"
 	"grouper/application/port/output"
 	"grouper/config/logger"
@@ -21,12 +20,13 @@ type topicService struct {
 }
 
 func (service *topicService) FindByID(topicID string) (*domain.Topic, error) {
-	logger.Debug("Init FindByID service", zap.String("journey", "FindByID"))
+	logger.Debug("Init FindByID in topicService", zap.String("journey", "FindTopicByID"))
 
-	topicRepo, err := service.repository.FindByID(topicID)
+	topic, err := service.repository.FindByID(topicID)
 	if err != nil {
-		return nil, errors.HandleServiceError(err, "Group", "FindByID")
+		return nil, err
 	}
 
-	return topicRepo, nil
+	logger.Debug("Finish FindByID in topicService", zap.String("journey", "FindTopicByID"))
+	return topic, nil
 }
